@@ -1,9 +1,14 @@
 from profile import (
     TraineeProfile,
-    Sex, ExperienceLevel, GoalLift, EquipmentAccess,
-    Weekday, InjuryRegion,
+    Sex,
+    ExperienceLevel,
+    GoalLift,
+    EquipmentAccess,
+    Weekday,
+    InjuryRegion,
 )
 from pydantic import ValidationError
+
 
 def ask_number(question, number_type=int):
     """
@@ -18,6 +23,7 @@ def ask_number(question, number_type=int):
             return number_type(answer)
         except ValueError:
             print(f"  Please enter a valid {number_type.__name__}.")
+
 
 def ask_choice(question, enum_class):
     """
@@ -38,6 +44,7 @@ def ask_choice(question, enum_class):
         except ValueError:
             pass
         print("  Invalid choice, try again.")
+
 
 def ask_multi_choice(question, enum_class, allow_empty=False):
     """
@@ -76,6 +83,7 @@ def ask_multi_choice(question, enum_class, allow_empty=False):
             # Remove accidental duplicates while keeping order
             return list(dict.fromkeys(chosen))
         print("  One or more choices are out of range, try again.")
+
 
 def run_questionnaire():
     """Walk through all questions, return a validated TraineeProfile."""

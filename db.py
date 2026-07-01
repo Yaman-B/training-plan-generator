@@ -1,6 +1,7 @@
 import psycopg2
 from profile import TraineeProfile
 
+
 def save_profile(profile: TraineeProfile) -> int:
     # 1. Connect to the training_plan database
     conn = psycopg2.connect(

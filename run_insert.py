@@ -1,7 +1,7 @@
 from profile import TraineeProfile
 from db import save_profile
 
-# Build a validated profile 
+# Build a validated profile
 profile = TraineeProfile(
     age=25,
     sex="male",

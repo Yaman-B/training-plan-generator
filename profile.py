@@ -2,14 +2,17 @@ from enum import Enum
 from typing import List
 from pydantic import BaseModel, Field, field_validator
 
+
 class Sex(str, Enum):
     male = "male"
     female = "female"
+
 
 class ExperienceLevel(str, Enum):
     beginner = "beginner"
     intermediate = "intermediate"
     advanced = "advanced"
+
 
 class GoalLift(str, Enum):
     bench = "bench"
@@ -18,10 +21,12 @@ class GoalLift(str, Enum):
     overhead_press = "overhead press"
     barbell_row = "barbell row"
 
+
 class EquipmentAccess(str, Enum):
     full_gym = "full gym"
     home_basic = "home basic"
     bodyweight_only = "bodyweight only"
+
 
 class InjuryRegion(str, Enum):
     neck = "neck"
@@ -34,6 +39,7 @@ class InjuryRegion(str, Enum):
     knees = "knees"
     ankles = "ankles"
 
+
 class Weekday(str, Enum):
     mon = "mon"
     tue = "tue"
@@ -42,6 +48,7 @@ class Weekday(str, Enum):
     fri = "fri"
     sat = "sat"
     sun = "sun"
+
 
 class TraineeProfile(BaseModel):
     # basics + experience
