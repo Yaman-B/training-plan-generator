@@ -1,5 +1,5 @@
 from ollama import chat
-from config import LLM_PROVIDER, OLLAMA_MODEL
+from tpg.config import LLM_PROVIDER, OLLAMA_MODEL
 
 
 def _generate_ollama(prompt: str, format_schema: dict | None = None) -> str:

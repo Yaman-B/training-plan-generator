@@ -1,7 +1,7 @@
-from profile import TraineeProfile
-from db import load_profile, save_yearly_plan
-from yearly_plan import YearlyPlan, YearlyPlanGeneration
-from llm import generate
+from tpg.schemas.profile import TraineeProfile
+from tpg.db import load_profile, save_yearly_plan
+from tpg.schemas.yearly_plan import YearlyPlan, YearlyPlanGeneration
+from tpg.llm import generate
 
 
 def _build_prompt(profile: TraineeProfile) -> str:

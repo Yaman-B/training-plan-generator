@@ -1,5 +1,5 @@
-from profile import TraineeProfile
-from db import save_profile
+from tpg.schemas.profile import TraineeProfile
+from tpg.db import save_profile
 
 # Build a validated profile
 profile = TraineeProfile(

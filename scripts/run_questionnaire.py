@@ -1,5 +1,5 @@
-from questionnaire import run_questionnaire
-from db import save_profile
+from tpg.questionnaire import run_questionnaire
+from tpg.db import save_profile
 
 print("=== Training Plan Questionnaire ===\n")
 

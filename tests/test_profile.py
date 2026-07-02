@@ -1,4 +1,4 @@
-from profile import TraineeProfile
+from tpg.schemas.profile import TraineeProfile
 from pydantic import ValidationError
 
 # 1. A valid profile,  should pass

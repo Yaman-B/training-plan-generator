@@ -1,4 +1,4 @@
-from yearly_plan import YearlyPlan, Phase, PhaseType, LiftTarget
+from tpg.schemas.yearly_plan import YearlyPlan, Phase, PhaseType, LiftTarget
 
 plan = YearlyPlan(
     profile_id=1,

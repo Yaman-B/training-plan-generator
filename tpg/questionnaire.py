@@ -1,4 +1,4 @@
-from profile import (
+from tpg.schemas.profile import (
     TraineeProfile,
     Sex,
     ExperienceLevel,

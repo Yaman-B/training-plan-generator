@@ -1,6 +1,6 @@
 import psycopg2
-from profile import TraineeProfile
-from yearly_plan import YearlyPlan
+from tpg.schemas.profile import TraineeProfile
+from tpg.schemas.yearly_plan import YearlyPlan
 from psycopg2.extras import RealDictCursor
 
 
