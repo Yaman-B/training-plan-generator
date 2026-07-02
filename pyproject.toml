@@ -3,8 +3,11 @@ name = "tpg"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.138.2",
+    "ollama>=0.6.2",
     "psycopg2-binary>=2.9.12",
     "pydantic>=2.13.4",
+    "uvicorn>=0.49.0",
 ]
 
 [dependency-groups]
