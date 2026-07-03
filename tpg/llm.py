@@ -1,5 +1,7 @@
 from ollama import chat
 from tpg.config import LLM_PROVIDER, OLLAMA_MODEL
+from typing import TypeVar
+from pydantic import BaseModel, ValidationError
 
 
 def _generate_ollama(prompt: str, format_schema: dict | None = None) -> str:
@@ -22,3 +24,36 @@ def generate(prompt: str, format_schema: dict | None = None) -> str:
     if LLM_PROVIDER == "ollama":
         return _generate_ollama(prompt, format_schema)
     raise ValueError(f"Unknown LLM provider: {LLM_PROVIDER}")
+
+
+# Declaring type variable so that monthly and weekly plans can use the same function
+T = TypeVar("T", bound=BaseModel)
+
+
+def generate_structured(prompt: str, schema: type[T], max_attempts: int = 3) -> T:
+    """Call the LLM and validate its JSON output against `schema`.
+
+    On a validation failure, feed the error back into the prompt and retry,
+    up to max_attempts times. Raises if no attempt produces valid output.
+    """
+    format_schema = schema.model_json_schema()
+    current_prompt = prompt
+    last_error: ValidationError | None = None
+
+    for _attempt in range(max_attempts):
+        raw = generate(current_prompt, format_schema=format_schema)
+        try:
+            return schema.model_validate_json(raw)
+        except ValidationError as err:
+            last_error = err
+            # Rebuild from the ORIGINAL prompt + only the latest error,
+            current_prompt = (
+                f"{prompt}\n\n"
+                f"Your previous response was invalid. "
+                f"Fix these problems and return corrected JSON:\n{err}"
+            )
+
+    raise ValueError(
+        f"LLM failed to produce valid output after {max_attempts} attempts. "
+        f"Last error:\n{last_error}"
+    )

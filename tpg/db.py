@@ -49,6 +49,7 @@ def save_profile(profile: TraineeProfile) -> int:
     finally:
         conn.close()
 
+
 def load_profile(profile_id: int) -> TraineeProfile:
     """Read a profile row from Postgres and rebuild it as a validated TraineeProfile."""
     conn = psycopg2.connect(
