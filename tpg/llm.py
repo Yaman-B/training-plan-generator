@@ -1,12 +1,19 @@
-from ollama import chat
-from tpg.config import LLM_PROVIDER, OLLAMA_MODEL
 from typing import TypeVar
+
+from anthropic import Anthropic, transform_schema
+from ollama import chat
 from pydantic import BaseModel, ValidationError
+
+from tpg.config import CLAUDE_MODEL, LLM_PROVIDER, OLLAMA_MODEL
+
+_client = Anthropic()  # reads ANTHROPIC_API_KEY from the environment
 
 
 def _generate_ollama(prompt: str, format_schema: dict | None = None) -> str:
     """Talk to the local Ollama server and return the text reply.
-    If format_schema is given, Ollama constrains output to that JSON schema."""
+
+    If format_schema is given, Ollama constrains output to that JSON schema.
+    """
     response = chat(
         model=OLLAMA_MODEL,
         messages=[{"role": "user", "content": prompt}],
@@ -15,14 +22,35 @@ def _generate_ollama(prompt: str, format_schema: dict | None = None) -> str:
     return response["message"]["content"]
 
 
-def generate(prompt: str, format_schema: dict | None = None) -> str:
+def _generate_claude(prompt: str, format_schema: dict | None = None) -> str:
+    """Talk to the Anthropic API and return the text reply.
+
+    If format_schema is given, Claude constrains output to that JSON schema.
     """
-    The single door for all LLM calls.
+    kwargs = {
+        "model": CLAUDE_MODEL,
+        "max_tokens": 4096,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if format_schema is not None:
+        kwargs["output_config"] = {
+            "format": {"type": "json_schema", "schema": transform_schema(format_schema)}
+        }
+
+    response = _client.messages.create(**kwargs)
+    return response.content[0].text
+
+
+def generate(prompt: str, format_schema: dict | None = None) -> str:
+    """The single door for all LLM calls.
+
     Routes to the active provider based on config.
     Pass format_schema (a JSON schema dict) to constrain output to that shape.
     """
     if LLM_PROVIDER == "ollama":
         return _generate_ollama(prompt, format_schema)
+    if LLM_PROVIDER == "claude":
+        return _generate_claude(prompt, format_schema)
     raise ValueError(f"Unknown LLM provider: {LLM_PROVIDER}")
 
 

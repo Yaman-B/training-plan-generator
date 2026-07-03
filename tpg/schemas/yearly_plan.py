@@ -1,7 +1,15 @@
 from datetime import datetime
 from enum import Enum
 from typing import List
-from pydantic import BaseModel, Field, model_validator
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class StrictModel(BaseModel):
+    """Closed-schema base: forbids extra fields, so model_json_schema()
+    emits `additionalProperties: false` — required by Claude's structured outputs."""
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class PhaseType(str, Enum):
@@ -10,14 +18,14 @@ class PhaseType(str, Enum):
     strong = "strong"
 
 
-class LiftTarget(BaseModel):
+class LiftTarget(StrictModel):
     """Weight x reps on the primary lift; same as the profile baseline."""
 
     weight_kg: float = Field(gt=0)
     reps: int = Field(ge=1, le=20)
 
 
-class Phase(BaseModel):
+class Phase(StrictModel):
     phase_type: PhaseType
     start_month: int = Field(ge=1, le=12)
     duration_months: int = Field(ge=2, le=7)  # loose global bounds
@@ -29,8 +37,9 @@ class Phase(BaseModel):
         return self.start_month + self.duration_months - 1
 
 
-class YearlyPlanGeneration(BaseModel):
+class YearlyPlanGeneration(StrictModel):
     """The part of a yearly plan the LLM generates; no bookkeeping fields.
+
     Holds all phase-validation logic so both the LLM output and the stored
     plan are refereed by the same rules."""
 
