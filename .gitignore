@@ -3,3 +3,6 @@ venv/
 __pycache__/
 .env
 CLAUDE.MD
+.pytest_cache/
+.ruff_cache/
+.DS_Store
