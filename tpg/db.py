@@ -2,6 +2,7 @@ import psycopg2
 from tpg.schemas.profile import TraineeProfile
 from tpg.schemas.yearly_plan import YearlyPlan
 from tpg.schemas.monthly_plan import MonthlyPlan
+from tpg.schemas.weekly_plan import WeeklyPlan
 from psycopg2.extras import RealDictCursor
 
 
@@ -123,6 +124,35 @@ def save_monthly_plan(plan: MonthlyPlan) -> int:
             (
                 plan.profile_id,
                 plan.yearly_plan_id,
+                plan.model_dump_json(),
+                plan.generated_at,
+            ),
+        )
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        return new_id
+    finally:
+        conn.close()
+
+
+def save_weekly_plan(plan: WeeklyPlan) -> int:
+    """Serialize a validated WeeklyPlan to JSONB and store it in the weekly_plans table."""
+    conn = psycopg2.connect(
+        dbname="training_plan",
+        user="postgres",
+        host="localhost",
+    )
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO weekly_plans (profile_id, monthly_plan_id, plan_data, generated_at)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id;
+            """,
+            (
+                plan.profile_id,
+                plan.monthly_plan_id,
                 plan.model_dump_json(),
                 plan.generated_at,
             ),

@@ -37,3 +37,11 @@ CREATE TABLE monthly_plans (
     plan_data      JSONB NOT NULL,
     generated_at   TIMESTAMP NOT NULL
 );
+
+CREATE TABLE weekly_plans (
+    id              SERIAL PRIMARY KEY,
+    profile_id      INTEGER NOT NULL REFERENCES profiles(id),
+    monthly_plan_id INTEGER NOT NULL REFERENCES monthly_plans(id),
+    plan_data       JSONB NOT NULL,
+    generated_at    TIMESTAMP NOT NULL
+);
