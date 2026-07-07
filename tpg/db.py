@@ -106,6 +106,28 @@ def save_yearly_plan(plan: YearlyPlan) -> int:
         conn.close()
 
 
+def load_yearly_plan(yearly_plan_id: int) -> YearlyPlan:
+    """Read a yearly plan row from Postgres and rebuild it as a validated YearlyPlan."""
+    conn = psycopg2.connect(
+        dbname="training_plan",
+        user="postgres",
+        host="localhost",
+    )
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT plan_data FROM plans WHERE id = %s;", (yearly_plan_id,))
+        row = cur.fetchone()
+
+        if row is None:
+            raise ValueError(f"No yearly plan found with id {yearly_plan_id}")
+
+        # plan_data already comes back as a dict (psycopg2 auto-deserializes jsonb),
+        # and it holds the full YearlyPlan (profile_id, generated_at, phases, ...).
+        return YearlyPlan.model_validate(row["plan_data"])
+    finally:
+        conn.close()
+
+
 def save_monthly_plan(plan: MonthlyPlan) -> int:
     """Serialize a validated MonthlyPlan to JSONB and store it in the monthly_plans table."""
     conn = psycopg2.connect(
@@ -135,6 +157,26 @@ def save_monthly_plan(plan: MonthlyPlan) -> int:
         conn.close()
 
 
+def load_monthly_plan(monthly_plan_id: int) -> MonthlyPlan:
+    """Read a monthly plan row from Postgres and rebuild it as a validated MonthlyPlan."""
+    conn = psycopg2.connect(
+        dbname="training_plan",
+        user="postgres",
+        host="localhost",
+    )
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT plan_data FROM monthly_plans WHERE id = %s;", (monthly_plan_id,))
+        row = cur.fetchone()
+
+        if row is None:
+            raise ValueError(f"No monthly plan found with id {monthly_plan_id}")
+
+        return MonthlyPlan.model_validate(row["plan_data"])
+    finally:
+        conn.close()
+
+
 def save_weekly_plan(plan: WeeklyPlan) -> int:
     """Serialize a validated WeeklyPlan to JSONB and store it in the weekly_plans table."""
     conn = psycopg2.connect(
@@ -160,5 +202,25 @@ def save_weekly_plan(plan: WeeklyPlan) -> int:
         new_id = cur.fetchone()[0]
         conn.commit()
         return new_id
+    finally:
+        conn.close()
+
+
+def load_weekly_plan(weekly_plan_id: int) -> WeeklyPlan:
+    """Read a weekly plan row from Postgres and rebuild it as a validated WeeklyPlan."""
+    conn = psycopg2.connect(
+        dbname="training_plan",
+        user="postgres",
+        host="localhost",
+    )
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT plan_data FROM weekly_plans WHERE id = %s;", (weekly_plan_id,))
+        row = cur.fetchone()
+
+        if row is None:
+            raise ValueError(f"No weekly plan found with id {weekly_plan_id}")
+
+        return WeeklyPlan.model_validate(row["plan_data"])
     finally:
         conn.close()
