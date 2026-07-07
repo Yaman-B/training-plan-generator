@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from typing import List
 
@@ -79,3 +79,4 @@ class YearlyPlan(YearlyPlanGeneration):
 
     profile_id: int
     generated_at: datetime = Field(default_factory=datetime.now)
+    start_date: date = Field(default_factory=date.today)

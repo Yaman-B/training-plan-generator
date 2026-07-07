@@ -45,3 +45,20 @@ CREATE TABLE weekly_plans (
     plan_data       JSONB NOT NULL,
     generated_at    TIMESTAMP NOT NULL
 );
+
+CREATE TABLE exercises (
+    id               SERIAL PRIMARY KEY,
+    name             TEXT NOT NULL,
+    muscle_group     TEXT NOT NULL,
+    complements_lift TEXT[] NOT NULL DEFAULT '{}',
+    equipment_access TEXT NOT NULL CHECK (equipment_access IN ('full gym', 'home basic', 'bodyweight only')),
+    stresses         TEXT[] NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE session_plans (
+    id             SERIAL PRIMARY KEY,
+    profile_id     INTEGER NOT NULL REFERENCES profiles(id),
+    weekly_plan_id INTEGER NOT NULL REFERENCES weekly_plans(id),
+    plan_data      JSONB NOT NULL,
+    generated_at   TIMESTAMP NOT NULL
+);

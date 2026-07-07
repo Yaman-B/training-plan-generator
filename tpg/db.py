@@ -3,7 +3,10 @@ from tpg.schemas.profile import TraineeProfile
 from tpg.schemas.yearly_plan import YearlyPlan
 from tpg.schemas.monthly_plan import MonthlyPlan
 from tpg.schemas.weekly_plan import WeeklyPlan
+from tpg.schemas.exercise import Exercise
+from tpg.schemas.session_plan import SessionPlan
 from psycopg2.extras import RealDictCursor
+from typing import List
 
 
 def save_profile(profile: TraineeProfile) -> int:
@@ -222,5 +225,70 @@ def load_weekly_plan(weekly_plan_id: int) -> WeeklyPlan:
             raise ValueError(f"No weekly plan found with id {weekly_plan_id}")
 
         return WeeklyPlan.model_validate(row["plan_data"])
+    finally:
+        conn.close()
+
+
+def load_exercises() -> List[Exercise]:
+    """Read every row from the exercises table and rebuild it as a validated Exercise."""
+    conn = psycopg2.connect(
+        dbname="training_plan",
+        user="postgres",
+        host="localhost",
+    )
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM exercises;")
+        rows = cur.fetchall()
+        return [Exercise(**row) for row in rows]
+    finally:
+        conn.close()
+
+
+def save_session_plan(plan: SessionPlan) -> int:
+    """Serialize a validated SessionPlan to JSONB and store it in the session_plans table."""
+    conn = psycopg2.connect(
+        dbname="training_plan",
+        user="postgres",
+        host="localhost",
+    )
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO session_plans (profile_id, weekly_plan_id, plan_data, generated_at)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id;
+            """,
+            (
+                plan.profile_id,
+                plan.weekly_plan_id,
+                plan.model_dump_json(),
+                plan.generated_at,
+            ),
+        )
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        return new_id
+    finally:
+        conn.close()
+
+
+def load_session_plan(session_plan_id: int) -> SessionPlan:
+    """Read a session plan row from Postgres and rebuild it as a validated SessionPlan."""
+    conn = psycopg2.connect(
+        dbname="training_plan",
+        user="postgres",
+        host="localhost",
+    )
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT plan_data FROM session_plans WHERE id = %s;", (session_plan_id,))
+        row = cur.fetchone()
+
+        if row is None:
+            raise ValueError(f"No session plan found with id {session_plan_id}")
+
+        return SessionPlan.model_validate(row["plan_data"])
     finally:
         conn.close()
