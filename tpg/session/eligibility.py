@@ -9,7 +9,9 @@ EQUIPMENT_TIER = {
 }
 
 
-def eligible_exercises(profile: TraineeProfile, all_exercises: List[Exercise]) -> List[Exercise]:
+def eligible_exercises(
+    profile: TraineeProfile, all_exercises: List[Exercise]
+) -> List[Exercise]:
     """Filter exercises down to what this trainee can actually do: matches their
     primary lift, fits their equipment (as a minimum-tier comparison, not an exact
     match), and avoids anything that stresses an injured region."""

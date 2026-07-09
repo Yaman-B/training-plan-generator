@@ -169,7 +169,9 @@ def load_monthly_plan(monthly_plan_id: int) -> MonthlyPlan:
     )
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT plan_data FROM monthly_plans WHERE id = %s;", (monthly_plan_id,))
+        cur.execute(
+            "SELECT plan_data FROM monthly_plans WHERE id = %s;", (monthly_plan_id,)
+        )
         row = cur.fetchone()
 
         if row is None:
@@ -218,7 +220,9 @@ def load_weekly_plan(weekly_plan_id: int) -> WeeklyPlan:
     )
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT plan_data FROM weekly_plans WHERE id = %s;", (weekly_plan_id,))
+        cur.execute(
+            "SELECT plan_data FROM weekly_plans WHERE id = %s;", (weekly_plan_id,)
+        )
         row = cur.fetchone()
 
         if row is None:
@@ -283,7 +287,9 @@ def load_session_plan(session_plan_id: int) -> SessionPlan:
     )
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT plan_data FROM session_plans WHERE id = %s;", (session_plan_id,))
+        cur.execute(
+            "SELECT plan_data FROM session_plans WHERE id = %s;", (session_plan_id,)
+        )
         row = cur.fetchone()
 
         if row is None:

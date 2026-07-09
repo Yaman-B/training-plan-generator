@@ -61,7 +61,9 @@ def generate_todays_session(
     phase = phase_for_week(yearly_plan, week_number)
     eligible = eligible_exercises(profile, all_exercises)
 
-    generation = generate_session_accessories(profile, phase, weekly_target.target, eligible)
+    generation = generate_session_accessories(
+        profile, phase, weekly_target.target, eligible
+    )
 
     return SessionPlan(
         profile_id=profile_id,
@@ -76,9 +78,19 @@ def generate_todays_session(
 
 # testing
 if __name__ == "__main__":
-    from tpg.db import load_profile, load_yearly_plan, load_weekly_plan, load_exercises, save_session_plan
+    from tpg.db import (
+        load_profile,
+        load_yearly_plan,
+        load_weekly_plan,
+        load_exercises,
+        save_session_plan,
+    )
 
-    pid, yearly_plan_id, weekly_plan_id = 4, 6, 4  # existing saved plans from this session
+    pid, yearly_plan_id, weekly_plan_id = (
+        4,
+        6,
+        4,
+    )  # existing saved plans from this session
 
     profile = load_profile(pid)
     yearly_plan = load_yearly_plan(yearly_plan_id)
@@ -86,8 +98,12 @@ if __name__ == "__main__":
     all_exercises = load_exercises()
 
     session = generate_todays_session(
-        profile, yearly_plan, weekly_plan, all_exercises,
-        profile_id=pid, weekly_plan_id=weekly_plan_id,
+        profile,
+        yearly_plan,
+        weekly_plan,
+        all_exercises,
+        profile_id=pid,
+        weekly_plan_id=weekly_plan_id,
     )
     if session is None:
         print("Rest day — no session generated.")

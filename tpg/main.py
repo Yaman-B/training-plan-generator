@@ -40,15 +40,35 @@ def load_profile_api(profile_id: int):
     return {"profile": profile}
 
 
-# Yearly Plan
-@app.post("/profile/{profile_id}/yearly-plan")
-def generate_yearly_plan_api(profile_id: int):
+# Full Plan (yearly + monthly + weekly, generated together)
+@app.post("/profile/{profile_id}/plan")
+def generate_full_plan_api(profile_id: int):
     profile = load_profile(profile_id)
+
     yearly_plan = generate_yearly_plan(profile, profile_id)
     yearly_plan_id = save_yearly_plan(yearly_plan)
+
+    monthly_plan = generate_monthly_plan(
+        profile=profile,
+        yearly_plan=yearly_plan,
+        profile_id=profile_id,
+        yearly_plan_id=yearly_plan_id,
+    )
+    monthly_plan_id = save_monthly_plan(monthly_plan)
+
+    weekly_plan = generate_weekly_plan(
+        profile=profile,
+        monthly_plan=monthly_plan,
+        profile_id=profile_id,
+        monthly_plan_id=monthly_plan_id,
+    )
+    weekly_plan_id = save_weekly_plan(weekly_plan)
+
     return {
-        "message": "Yearly plan generated and saved successfully",
+        "message": "Full plan generated and saved successfully",
         "yearly_plan_id": yearly_plan_id,
+        "monthly_plan_id": monthly_plan_id,
+        "weekly_plan_id": weekly_plan_id,
     }
 
 
@@ -58,46 +78,10 @@ def load_yearly_plan_api(yearly_plan_id: int):
     return {"yearly_plan": yearly_plan}
 
 
-# Monthly Plan
-@app.post("/yearly-plan/{yearly_plan_id}/monthly-plan")
-def generate_monthly_plan_api(yearly_plan_id: int):
-    yearly_plan = load_yearly_plan(yearly_plan_id)
-    profile = load_profile(yearly_plan.profile_id)
-    monthly_plan = generate_monthly_plan(
-        profile=profile,
-        yearly_plan=yearly_plan,
-        profile_id=yearly_plan.profile_id,
-        yearly_plan_id=yearly_plan_id,
-    )
-    monthly_plan_id = save_monthly_plan(monthly_plan)
-    return {
-        "message": "Monthly plan generated and saved successfully",
-        "monthly_plan_id": monthly_plan_id,
-    }
-
-
 @app.get("/monthly-plan/{monthly_plan_id}")
 def load_monthly_plan_api(monthly_plan_id: int):
     monthly_plan = load_monthly_plan(monthly_plan_id)
     return {"monthly_plan": monthly_plan}
-
-
-# Weekly Plan
-@app.post("/monthly-plan/{monthly_plan_id}/weekly-plan")
-def generate_weekly_plan_api(monthly_plan_id: int):
-    monthly_plan = load_monthly_plan(monthly_plan_id)
-    profile = load_profile(monthly_plan.profile_id)
-    weekly_plan = generate_weekly_plan(
-        profile=profile,
-        monthly_plan=monthly_plan,
-        profile_id=monthly_plan.profile_id,
-        monthly_plan_id=monthly_plan_id,
-    )
-    weekly_plan_id = save_weekly_plan(weekly_plan)
-    return {
-        "message": "Weekly plan generated and saved successfully",
-        "weekly_plan_id": weekly_plan_id,
-    }
 
 
 @app.get("/weekly-plan/{weekly_plan_id}")
