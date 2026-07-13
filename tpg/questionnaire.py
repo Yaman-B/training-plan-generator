@@ -25,6 +25,15 @@ def ask_number(question, number_type=int):
             print(f"  Please enter a valid {number_type.__name__}.")
 
 
+def ask_text(question):
+    """
+    Ask an optional free-text question.
+    Returns the trimmed answer, or None if the user just pressed Enter.
+    """
+    answer = input(question + " (optional, press Enter to skip) ").strip()
+    return answer or None
+
+
 def ask_choice(question, enum_class):
     """
     Ask the user to pick one option from an enum.
@@ -105,6 +114,9 @@ def run_questionnaire():
         target_weight = ask_number(
             "What's your goal weight for that lift, for that many reps (kg)?", float
         )
+        goal_description = ask_text(
+            "Anything else about what you're training for, in your own words?"
+        )
 
         # Logistics + constraints
         training_days = ask_multi_choice(
@@ -115,6 +127,9 @@ def run_questionnaire():
         )
         injuries = ask_multi_choice(
             "Any areas you need to avoid loading?", InjuryRegion, allow_empty=True
+        )
+        injury_description = ask_text(
+            "Anything more about those injuries (when they hurt, what's still fine)?"
         )
 
         # Assemble + validate
@@ -131,6 +146,8 @@ def run_questionnaire():
                 training_days=training_days,
                 equipment_access=equipment_access,
                 injuries=injuries,
+                goal_description=goal_description,
+                injury_description=injury_description,
             )
             return profile
         except ValidationError as e:

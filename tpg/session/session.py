@@ -18,6 +18,21 @@ def _build_session_prompt(
     eligible: List[Exercise],
 ) -> str:
     exercise_list = "\n".join(f"- {ex.name} ({ex.muscle_group})" for ex in eligible)
+
+    # The trainee's own words, spliced in only when present. Note the list above has
+    # ALREADY been filtered deterministically by injury enum / equipment / goal lift —
+    # this text only guides the pick *within* that safe list, it can't widen it.
+    notes = ""
+    if profile.goal_description:
+        notes += f'\nThe trainee describes their goal as: "{profile.goal_description}"\n'
+    if profile.injury_description:
+        notes += (
+            f'\nThe trainee describes their injuries as: "{profile.injury_description}"\n'
+            f"Use this to choose more carefully within the list above (it is already "
+            f"filtered for their declared injuries). Favour exercises that work around "
+            f"the specifics they describe.\n"
+        )
+
     return f"""You are an expert strength coach using Paul Carter's methodology.
 
 You are building today's accessory work for a trainee currently in the {phase.value} phase.
@@ -25,7 +40,7 @@ Their primary lift today is {profile.goal_lift.value}: {primary_lift_target.weig
 
 Choose 2 to 5 accessory exercises ONLY from this list (use the exact names given):
 {exercise_list}
-
+{notes}
 Prescribe sets and reps appropriate for the {phase.value} phase. Pick a balanced combination — do not repeat the same muscle group for every exercise.
 
 Return only the JSON object, with no extra text, explanation, or formatting."""

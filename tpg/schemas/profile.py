@@ -69,6 +69,12 @@ class TraineeProfile(BaseModel):
     equipment_access: EquipmentAccess
     injuries: List[InjuryRegion] = Field(default_factory=list)
 
+    # Optional free text, fed to the LLM for nuance the enums above can't express.
+    # The enums still drive the deterministic filtering; this only advises the LLM.
+    # Capped so a long answer can't bloat every prompt it's spliced into.
+    goal_description: str | None = Field(default=None, max_length=500)
+    injury_description: str | None = Field(default=None, max_length=500)
+
     @field_validator("target_weight")
     @classmethod
     def target_must_exceed_baseline(cls, target, info):

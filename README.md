@@ -14,6 +14,13 @@ plan and hands the trainee a customized workout for today.
 - **Session Flow:** turns the current plan into today's specific workout: the primary
   lift's target for the week, plus accessory exercises pulled from a curated exercise
   table (filtered by equipment access and injuries) and picked/prescribed by an LLM.
+- **Structured data + free text.** The profile's enums (injury regions, equipment) drive a
+  **deterministic** filter that decides which exercises are *allowed*. Two optional free-text
+  fields (`goal_description`, `injury_description`) are then fed to the **LLM prompts**, which
+  guide the choice *within* that already-safe list. So safety stays deterministic, while the
+  LLM handles nuance the enums can't express: ticking "shoulders" excludes every
+  shoulder-stressing exercise, whereas writing *"shoulders ache on pressing; flyes are fine"*
+  lets the model avoid the presses while keeping the flyes.
 
 ## Setup
 

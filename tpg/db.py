@@ -25,9 +25,10 @@ def save_profile(profile: TraineeProfile) -> int:
             INSERT INTO profiles (
                 age, sex, bodyweight, experience_level,
                 goal_lift, rep_target, baseline_weight, target_weight,
-                timeframe_months, training_days, equipment_access, injuries
+                timeframe_months, training_days, equipment_access, injuries,
+                goal_description, injury_description
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id;
             """,
             (
@@ -43,6 +44,8 @@ def save_profile(profile: TraineeProfile) -> int:
                 [d.value for d in profile.training_days],
                 profile.equipment_access.value,
                 [i.value for i in profile.injuries],
+                profile.goal_description,
+                profile.injury_description,
             ),
         )
 

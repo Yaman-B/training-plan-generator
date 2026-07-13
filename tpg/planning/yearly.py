@@ -6,6 +6,17 @@ from tpg.tracing import observe
 
 
 def _build_prompt(profile: TraineeProfile) -> str:
+    # Only spliced in when the trainee actually wrote something, so the prompt never
+    # carries a dangling "In their own words: None".
+    goal_notes = (
+        f"\nThe trainee also described their goal in their own words:\n"
+        f'"{profile.goal_description}"\n'
+        f"Take this into account when shaping the phases (their lengths and goals), "
+        f"but keep the plan's structure and the one-year goal above.\n"
+        if profile.goal_description
+        else ""
+    )
+
     return f"""You are an expert strength coach who designs training plans using Paul Carter's methodology.
 
 Carter's system splits a training year into three ordered phases:
@@ -29,7 +40,7 @@ Here is the trainee's profile:
 - Primary lift: {profile.goal_lift.value}
 - Current baseline: {profile.baseline_weight} kg for {profile.rep_target} reps
 - One-year goal: {profile.target_weight} kg for {profile.rep_target} reps
-
+{goal_notes}
 Design the three phases so the trainee progresses sensibly from their current baseline toward their one-year goal, with each phase's goal building on the previous one.
 
 Use these exact phase_type values: "mass", "base", "strong".

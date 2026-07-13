@@ -20,6 +20,9 @@ CREATE TABLE profiles (
     training_days     TEXT[] NOT NULL CHECK (array_length(training_days, 1) >= 2),
     equipment_access  TEXT NOT NULL CHECK (equipment_access IN ('full gym', 'home basic', 'bodyweight only')),
     injuries          TEXT[] NOT NULL DEFAULT '{}',
+    -- Optional free text, fed to the LLM for nuance the enums can't express.
+    goal_description   TEXT CHECK (goal_description   IS NULL OR char_length(goal_description)   <= 500),
+    injury_description TEXT CHECK (injury_description IS NULL OR char_length(injury_description) <= 500),
     CHECK (target_weight > 0 AND target_weight > baseline_weight)
 );
 
