@@ -44,12 +44,13 @@ server, an Anthropic API key.
 uv run python scripts/run_questionnaire.py
 ```
 
-**API server:**
+**API server + web UI:**
 ```
 uv run uvicorn tpg.main:app --reload
 ```
-Interactive docs (try requests directly in the browser) are then available at
-`http://127.0.0.1:8000/docs`.
+Open `http://127.0.0.1:8000/app/` for the web UI (onboarding form, then a "This Week" view
+showing every training day of the current week with today highlighted). Interactive API docs
+(try requests directly in the browser) are at `http://127.0.0.1:8000/docs`.
 
 ## API reference
 
@@ -61,7 +62,8 @@ Interactive docs (try requests directly in the browser) are then available at
 | `GET` | `/yearly-plan/{yearly_plan_id}` | Read a yearly plan |
 | `GET` | `/monthly-plan/{monthly_plan_id}` | Read a monthly plan |
 | `GET` | `/weekly-plan/{weekly_plan_id}` | Read a weekly plan |
-| `POST` | `/weekly-plan/{weekly_plan_id}/session/today` | Generate today's session (optional `target_date` query param; returns `{"rest_day": true}` on a non-training day) |
+| `POST` | `/weekly-plan/{weekly_plan_id}/sessions/week` | Generate a full workout for every training day of the current week (optional `target_date`); returns a 7-day grid with training/rest days marked. Used by the web UI. |
+| `POST` | `/weekly-plan/{weekly_plan_id}/session/today` | Generate just today's session (optional `target_date`; returns `{"rest_day": true}` on a non-training day) |
 | `GET` | `/session/{session_plan_id}` | Read a session plan |
 
 ## Project structure
@@ -79,7 +81,15 @@ scripts/
   run_questionnaire.py   Run the questionnaire and save a profile
   seed_exercises.sql     Curated exercise data
 schema.sql     Hand-maintained snapshot of the Postgres schema
+web/
+  index.html   Onboarding form + plan-generation loading state
+  week.html    "This Week" view: every training day of the week, today highlighted
+  js/api.js    Fetch wrappers around the API above
 ```
+
+Served directly by FastAPI (`StaticFiles` mounted at `/app`), no separate frontend server
+or build step, plain HTML/CSS (Tailwind via CDN)/JS. Identity is a `profile_id` kept in the
+browser's `localStorage`, there's no login.
 
 ## Not yet built
 
@@ -87,4 +97,5 @@ schema.sql     Hand-maintained snapshot of the Postgres schema
   the core logic (both flows) was stable. Still an open question whether LangGraph adds
   real value here, since it would mostly formalize control flow that already works today
   as plain Python.
-- **mobile UI:** a next step that will eliminate the command-line questionnaire. Not yet started.
+- **A Profile view/edit page, workout logging/history, and real plan-generation progress
+  reporting.** None of these have backend support yet.

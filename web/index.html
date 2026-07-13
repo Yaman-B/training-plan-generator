@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TPG — Create Your Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&amp;family=Lexend:wght@700;800&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: { extend: {
+            "colors": {
+                "surface-container-low": "#0d1c2d", "surface-variant": "#273647",
+                "surface-container-high": "#1c2b3c", "on-surface-variant": "#c4c9ac",
+                "primary": "#ffffff", "on-surface": "#d4e4fa",
+                "surface-container-lowest": "#010f1f", "surface": "#051424",
+                "surface-container-highest": "#273647", "primary-container": "#c3f400",
+                "on-primary": "#283500", "background": "#051424",
+                "surface-container": "#122131", "on-primary-container": "#556d00",
+                "error": "#ffb4ab"
+            },
+            "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+            "spacing": { "touch-target": "48px", "container-margin": "20px", "inner-padding": "12px", "section-gap": "32px", "stack-gap": "16px" },
+            "fontFamily": {
+                "body-md": ["Inter"], "display-lg": ["Lexend"], "body-lg": ["Inter"],
+                "headline-lg-mobile": ["Lexend"], "headline-md": ["Lexend"],
+                "label-md": ["JetBrains Mono"], "headline-lg": ["Lexend"]
+            },
+            "fontSize": {
+                "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                "display-lg": ["48px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+            }
+        } }
+    }
+</script>
+<style>
+    body { background-color: #051424; color: #d4e4fa; min-height: max(884px, 100dvh); }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .input-base { background-color: #ffffff; border: 1px solid #273647; color: #0f172a; }
+    .input-base::placeholder { color: #64748b; }
+    .input-base:focus { border-color: #c3f400; outline: none; box-shadow: 0 0 0 1px #c3f400; }
+    .btn-volt { background-color: #c3f400; color: #000000; box-shadow: 0 4px 20px -4px rgba(195, 244, 0, 0.4); }
+    .chip-base { background-color: #1e293b; border: 1px solid #273647; color: #c4c9ac; cursor: pointer; }
+    .chip-active { background-color: rgba(195, 244, 0, 0.15); border: 1px solid #c3f400; color: #c3f400; cursor: pointer; }
+    .segmented-base { background-color: #0f172a; padding: 4px; border-radius: 0.5rem; }
+    .segmented-item { color: #c4c9ac; text-align: center; cursor: pointer; transition: all 0.2s; border-radius: 0.375rem; padding: 12px 0; }
+    .segmented-item.active { background-color: #c3f400; color: #000000; font-weight: 700; }
+    .spinner { animation: spin 1.5s linear infinite; transform-origin: 50% 50%; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-text { transition: opacity 0.4s ease, transform 0.4s ease; }
+    [hidden] { display: none !important; }
+</style>
+</head>
+<body class="antialiased pb-[100px] min-h-screen">
+
+<!-- ===================== Profile form view ===================== -->
+<div id="profile-view">
+<header class="bg-surface w-full top-0 sticky flex items-center justify-center px-container-margin h-touch-target z-50">
+<div class="font-display-lg text-headline-md text-primary uppercase italic">TPG</div>
+</header>
+<main class="max-w-2xl mx-auto px-container-margin mt-section-gap">
+<div class="mb-section-gap">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Create Your Profile</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Let's engineer your foundation. Precision data leads to precise results.</p>
+</div>
+<p id="form-error" hidden class="font-body-md text-body-md mb-stack-gap p-3 rounded-lg" style="background:#93000a;color:#ffdad6;"></p>
+<form id="profile-form" class="space-y-section-gap">
+
+<!-- Basic Bio -->
+<section class="bg-surface-container-high rounded-xl p-stack-gap">
+<h2 class="font-headline-md text-headline-md text-primary mb-stack-gap flex items-center"><span class="material-symbols-outlined mr-2 text-primary-container">person</span> Basic Bio</h2>
+<div class="grid grid-cols-2 gap-stack-gap mb-stack-gap">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2 uppercase">Age</label>
+<input id="age" class="w-full h-touch-target rounded-lg input-base px-inner-padding font-body-lg text-body-lg text-center" inputmode="numeric" placeholder="Yrs" type="number" min="13" max="100"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2 uppercase">Bodyweight (kg)</label>
+<input id="bodyweight" class="w-full h-touch-target rounded-lg input-base px-inner-padding font-body-lg text-body-lg text-center" inputmode="decimal" placeholder="0.0" type="number" step="0.1" min="1"/>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2 uppercase">Biological Sex</label>
+<div class="segmented-base flex w-full" data-group="sex">
+<div class="segmented-item flex-1 active font-label-md text-label-md uppercase" data-value="male">Male</div>
+<div class="segmented-item flex-1 font-label-md text-label-md uppercase" data-value="female">Female</div>
+</div>
+</div>
+</section>
+
+<!-- Experience -->
+<section class="bg-surface-container-high rounded-xl p-stack-gap">
+<h2 class="font-headline-md text-headline-md text-primary mb-stack-gap flex items-center"><span class="material-symbols-outlined mr-2 text-primary-container">fitness_center</span> Experience Level</h2>
+<div class="segmented-base flex flex-col md:flex-row gap-2" data-group="experience_level">
+<div class="segmented-item flex-1 font-label-md text-label-md uppercase" data-value="beginner">Beginner</div>
+<div class="segmented-item flex-1 active font-label-md text-label-md uppercase" data-value="intermediate">Intermediate</div>
+<div class="segmented-item flex-1 font-label-md text-label-md uppercase" data-value="advanced">Advanced</div>
+</div>
+</section>
+
+<!-- Goals -->
+<section class="bg-surface-container-high rounded-xl p-stack-gap">
+<h2 class="font-headline-md text-headline-md text-primary mb-stack-gap flex items-center"><span class="material-symbols-outlined mr-2 text-primary-container">track_changes</span> Primary Goal</h2>
+<div class="space-y-stack-gap">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2 uppercase">Focus Lift</label>
+<select id="goal_lift" class="w-full h-touch-target rounded-lg input-base px-inner-padding font-body-lg text-body-lg">
+<option value="bench">Bench Press</option>
+<option value="squat">Squat</option>
+<option value="deadlift">Deadlift</option>
+<option value="overhead press">Overhead Press</option>
+<option value="barbell row">Barbell Row</option>
+</select>
+</div>
+<div class="grid grid-cols-3 gap-stack-gap">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2 uppercase text-xs truncate">Target Reps</label>
+<input id="rep_target" class="w-full h-touch-target rounded-lg input-base px-inner-padding font-body-lg text-body-lg text-center" inputmode="numeric" placeholder="1-12" type="number" min="1" max="12"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2 uppercase text-xs truncate">Current Wt</label>
+<input id="baseline_weight" class="w-full h-touch-target rounded-lg input-base px-inner-padding font-body-lg text-body-lg text-center" inputmode="decimal" placeholder="kg" type="number" step="0.1" min="0.1"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2 uppercase text-xs truncate">Goal Wt</label>
+<input id="target_weight" class="w-full h-touch-target rounded-lg input-base px-inner-padding font-body-lg text-body-lg text-center" inputmode="decimal" placeholder="kg" type="number" step="0.1" min="0.1"/>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Logistics -->
+<section class="bg-surface-container-high rounded-xl p-stack-gap">
+<h2 class="font-headline-md text-headline-md text-primary mb-stack-gap flex items-center"><span class="material-symbols-outlined mr-2 text-primary-container">calendar_month</span> Logistics</h2>
+<div class="mb-stack-gap">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-3 uppercase">Training Days (2+)</label>
+<div class="flex justify-between gap-1" id="training-days">
+<button class="day-toggle w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full chip-active font-label-md text-label-md flex items-center justify-center" type="button" data-value="mon">M</button>
+<button class="day-toggle w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full chip-base font-label-md text-label-md flex items-center justify-center" type="button" data-value="tue">T</button>
+<button class="day-toggle w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full chip-active font-label-md text-label-md flex items-center justify-center" type="button" data-value="wed">W</button>
+<button class="day-toggle w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full chip-base font-label-md text-label-md flex items-center justify-center" type="button" data-value="thu">T</button>
+<button class="day-toggle w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full chip-active font-label-md text-label-md flex items-center justify-center" type="button" data-value="fri">F</button>
+<button class="day-toggle w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full chip-base font-label-md text-label-md flex items-center justify-center" type="button" data-value="sat">S</button>
+<button class="day-toggle w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full chip-base font-label-md text-label-md flex items-center justify-center" type="button" data-value="sun">S</button>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2 uppercase">Equipment</label>
+<div class="segmented-base flex flex-col md:flex-row gap-2" data-group="equipment_access">
+<div class="segmented-item flex-1 active font-label-md text-label-md uppercase" data-value="full gym">Full Gym</div>
+<div class="segmented-item flex-1 font-label-md text-label-md uppercase" data-value="home basic">Home Basic</div>
+<div class="segmented-item flex-1 font-label-md text-label-md uppercase" data-value="bodyweight only">Bodyweight</div>
+</div>
+</div>
+</section>
+
+<!-- Injury History -->
+<section class="bg-surface-container-high rounded-xl p-stack-gap mb-8">
+<h2 class="font-headline-md text-headline-md text-primary mb-stack-gap flex items-center text-error"><span class="material-symbols-outlined mr-2">healing</span> Injury History</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 text-sm">Select areas to avoid heavy loading.</p>
+<div class="flex flex-wrap gap-2" id="injuries">
+<button class="injury-chip chip-base px-4 py-2 rounded-full font-label-md text-label-md uppercase" type="button" data-value="neck">Neck</button>
+<button class="injury-chip chip-base px-4 py-2 rounded-full font-label-md text-label-md uppercase" type="button" data-value="shoulders">Shoulders</button>
+<button class="injury-chip chip-base px-4 py-2 rounded-full font-label-md text-label-md uppercase" type="button" data-value="elbows">Elbows</button>
+<button class="injury-chip chip-base px-4 py-2 rounded-full font-label-md text-label-md uppercase" type="button" data-value="wrists">Wrists</button>
+<button class="injury-chip chip-base px-4 py-2 rounded-full font-label-md text-label-md uppercase" type="button" data-value="lower back">Lower Back</button>
+<button class="injury-chip chip-base px-4 py-2 rounded-full font-label-md text-label-md uppercase" type="button" data-value="upper back">Upper Back</button>
+<button class="injury-chip chip-base px-4 py-2 rounded-full font-label-md text-label-md uppercase" type="button" data-value="hips">Hips</button>
+<button class="injury-chip chip-base px-4 py-2 rounded-full font-label-md text-label-md uppercase" type="button" data-value="knees">Knees</button>
+<button class="injury-chip chip-base px-4 py-2 rounded-full font-label-md text-label-md uppercase" type="button" data-value="ankles">Ankles</button>
+</div>
+</section>
+</form>
+</main>
+<div class="fixed bottom-0 left-0 w-full bg-surface/90 backdrop-blur-md p-container-margin border-t border-surface-variant z-50">
+<div class="max-w-2xl mx-auto">
+<button id="submit-btn" class="w-full h-touch-target rounded-lg btn-volt font-headline-md text-headline-md uppercase tracking-wider flex items-center justify-center transition-transform active:scale-[0.98]" type="button">Generate My Plan <span class="material-symbols-outlined ml-2">bolt</span></button>
+</div>
+</div>
+</div>
+
+<!-- ===================== Loading view ===================== -->
+<div id="loading-view" hidden class="fixed inset-0 bg-surface flex flex-col items-center justify-center z-[100] px-container-margin">
+<div class="relative w-32 h-32 flex items-center justify-center mb-12">
+<svg class="absolute inset-0 w-full h-full text-surface-container-high" viewBox="0 0 100 100"><circle class="stroke-current" cx="50" cy="50" fill="none" r="40" stroke-width="8"></circle></svg>
+<svg class="absolute inset-0 w-full h-full text-primary-container spinner" viewBox="0 0 100 100"><circle class="stroke-current" cx="50" cy="50" fill="none" r="40" stroke-dasharray="180" stroke-dashoffset="0" stroke-linecap="round" stroke-width="8"></circle></svg>
+<span class="material-symbols-outlined text-primary-container text-4xl" style="font-variation-settings: 'FILL' 1;">fitness_center</span>
+</div>
+<div class="relative w-full text-center h-16">
+<p class="font-display-lg text-headline-lg-mobile text-primary absolute w-full" id="loading-text">Building your yearly roadmap...</p>
+</div>
+<div class="font-label-md text-label-md text-on-surface-variant flex items-center gap-2 mt-8" id="loading-pct">0%</div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+    // Returning user: skip the form entirely.
+    if (localStorage.getItem("tpg_profile_id")) {
+        window.location.href = "week.html";
+    }
+
+    // Segmented controls: single-select within a group.
+    document.querySelectorAll('[data-group]').forEach(group => {
+        group.querySelectorAll('.segmented-item').forEach(item => {
+            item.addEventListener('click', () => {
+                group.querySelectorAll('.segmented-item').forEach(s => s.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+    });
+
+    // Day toggles + injury chips: multi-select (toggle chip-active/chip-base).
+    document.querySelectorAll('.day-toggle, .injury-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            chip.classList.toggle('chip-active');
+            chip.classList.toggle('chip-base');
+        });
+    });
+
+    function selectedValue(groupName) {
+        const active = document.querySelector(`[data-group="${groupName}"] .segmented-item.active`);
+        return active ? active.dataset.value : null;
+    }
+
+    function readProfileForm() {
+        const trainingDays = Array.from(document.querySelectorAll("#training-days .day-toggle.chip-active")).map(el => el.dataset.value);
+        const injuries = Array.from(document.querySelectorAll("#injuries .injury-chip.chip-active")).map(el => el.dataset.value);
+        return {
+            age: parseInt(document.getElementById("age").value, 10),
+            sex: selectedValue("sex"),
+            bodyweight: parseFloat(document.getElementById("bodyweight").value),
+            experience_level: selectedValue("experience_level"),
+            goal_lift: document.getElementById("goal_lift").value,
+            rep_target: parseInt(document.getElementById("rep_target").value, 10),
+            baseline_weight: parseFloat(document.getElementById("baseline_weight").value),
+            target_weight: parseFloat(document.getElementById("target_weight").value),
+            training_days: trainingDays,
+            equipment_access: selectedValue("equipment_access"),
+            injuries: injuries,
+        };
+    }
+
+    function showError(message) {
+        const el = document.getElementById("form-error");
+        el.textContent = message;
+        el.hidden = false;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function startLoadingAnimation() {
+        document.getElementById("profile-view").hidden = true;
+        document.getElementById("loading-view").hidden = false;
+
+        const messages = [
+            "Building your yearly roadmap...",
+            "Mapping out your months...",
+            "Planning your weeks...",
+            "This can take a couple of minutes...",
+        ];
+        const textEl = document.getElementById("loading-text");
+        let i = 0;
+        setInterval(() => {
+            textEl.style.opacity = "0";
+            setTimeout(() => {
+                i = (i + 1) % messages.length;
+                textEl.textContent = messages[i];
+                textEl.style.opacity = "1";
+            }, 400);
+        }, 3000);
+
+        // Simulated progress: the backend has no real progress signal for this one long
+        // synchronous call, so this ramps toward 90% and holds until the real response lands.
+        const pctEl = document.getElementById("loading-pct");
+        let pct = 0;
+        return setInterval(() => {
+            if (pct < 90) { pct += 1; pctEl.textContent = `${pct}%`; }
+        }, 1000);
+    }
+
+    document.getElementById("submit-btn").addEventListener("click", async () => {
+        const data = readProfileForm();
+        if (data.training_days.length < 2) { showError("Select at least 2 training days."); return; }
+        if (!data.age || !data.bodyweight || !data.rep_target || !data.baseline_weight || !data.target_weight) {
+            showError("Please fill in all number fields."); return;
+        }
+        if (data.target_weight <= data.baseline_weight) {
+            showError("Goal weight must be greater than current weight."); return;
+        }
+
+        let profileId;
+        try {
+            profileId = (await createProfile(data)).profile_id;
+        } catch (err) {
+            showError("Could not save profile: " + err.message); return;
+        }
+        localStorage.setItem("tpg_profile_id", profileId);
+
+        const progress = startLoadingAnimation();
+        try {
+            const plan = await generatePlan(profileId);
+            clearInterval(progress);
+            localStorage.setItem("tpg_weekly_plan_id", plan.weekly_plan_id);
+            window.location.href = "week.html";
+        } catch (err) {
+            clearInterval(progress);
+            document.getElementById("loading-view").hidden = true;
+            document.getElementById("profile-view").hidden = false;
+            showError("Could not generate plan: " + err.message);
+        }
+    });
+</script>
+</body>
+</html>

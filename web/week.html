@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TPG — This Week</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&amp;family=Lexend:wght@700;800&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: { extend: {
+            "colors": {
+                "surface-container-low": "#0d1c2d", "surface-variant": "#273647",
+                "surface-container-high": "#1c2b3c", "on-surface-variant": "#c4c9ac",
+                "primary": "#ffffff", "on-surface": "#d4e4fa",
+                "surface-container-lowest": "#010f1f", "surface": "#051424",
+                "surface-container-highest": "#273647", "primary-container": "#c3f400",
+                "on-primary-container": "#556d00", "background": "#051424",
+                "surface-container": "#122131"
+            },
+            "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+            "spacing": { "touch-target": "48px", "container-margin": "20px", "inner-padding": "12px", "section-gap": "32px", "stack-gap": "16px" },
+            "fontFamily": {
+                "body-md": ["Inter"], "display-lg": ["Lexend"], "body-lg": ["Inter"],
+                "headline-lg-mobile": ["Lexend"], "headline-md": ["Lexend"],
+                "label-md": ["JetBrains Mono"], "headline-lg": ["Lexend"]
+            },
+            "fontSize": {
+                "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                "display-lg": ["44px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+            }
+        } }
+    }
+</script>
+<style>
+    body { background-color: #051424; color: #d4e4fa; min-height: max(884px, 100dvh); }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .glow-shadow { box-shadow: 0 0 25px -5px rgba(195, 244, 0, 0.4); }
+</style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-32">
+<header class="w-full top-0 sticky bg-surface flex items-center justify-center px-container-margin h-touch-target z-50">
+<h1 class="font-display-lg text-headline-md text-primary uppercase italic tracking-tight">TPG</h1>
+</header>
+
+<main class="max-w-screen-md mx-auto px-container-margin pt-section-gap flex flex-col gap-stack-gap">
+<div class="mb-4">
+<h2 class="font-headline-lg text-headline-lg text-primary tracking-tight">This Week</h2>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1 uppercase" id="week-subtitle">Loading…</p>
+</div>
+<div id="week-container" class="flex flex-col gap-stack-gap">
+<p class="font-body-lg text-body-lg text-on-surface-variant text-center py-12" id="status-msg">Loading this week's plan…</p>
+</div>
+</main>
+
+<script src="js/api.js"></script>
+<script>
+    const weeklyPlanId = localStorage.getItem("tpg_weekly_plan_id");
+    if (!weeklyPlanId) { window.location.href = "index.html"; }
+
+    // Dev/testing aid: ?date=YYYY-MM-DD simulates a different "today" so you can see the
+    // styled week view at any point in the plan. When set, we skip the cache and pass the
+    // date to the API as target_date. Normal usage (no param) is completely unchanged.
+    const simDate = /^\d{4}-\d{2}-\d{2}$/.test(new URLSearchParams(location.search).get("date") || "")
+        ? new URLSearchParams(location.search).get("date") : null;
+    function effectiveToday() { return simDate || todayISO(); }
+
+    const PHASE_LABEL = { mass: "Hypertrophy Phase", base: "Base Building Phase", strong: "Strength Phase" };
+    const DAY_FULL = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
+
+    function todayISO() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function esc(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function restRow(day, isToday) {
+        const badge = isToday
+            ? '<span class="font-label-md text-label-md text-on-primary-container font-bold bg-primary-container px-2 py-0.5 rounded">TODAY · REST</span>'
+            : '<span class="font-body-md text-body-md text-on-surface-variant italic">Rest Day</span>';
+        return `<div class="flex items-center justify-between py-3 px-4 bg-surface-container-low/50 rounded-lg border ${isToday ? "border-primary-container" : "border-surface-container-highest/50"}">
+            <span class="font-label-md text-label-md text-on-surface-variant">${DAY_FULL[day.weekday].toUpperCase()}</span>
+            ${badge}
+        </div>`;
+    }
+
+    function workoutCard(day, goalLift, isToday) {
+        const accessories = day.accessories.map(a => `
+            <li class="flex justify-between items-center border-b border-surface-variant/60 pb-2 last:border-0 last:pb-0">
+                <span class="font-body-md text-body-md text-on-surface">${esc(a.name)}</span>
+                <span class="font-label-md text-label-md text-on-surface-variant">${a.sets} × ${a.reps}</span>
+            </li>`).join("");
+
+        const cardClass = isToday
+            ? "bg-surface-container-highest border-2 border-primary-container glow-shadow"
+            : "bg-surface-container-high border border-surface-variant";
+        const dayBadge = isToday
+            ? '<span class="font-label-md text-label-md text-on-primary-container font-bold bg-primary-container px-4 py-1.5 rounded-bl-lg">TODAY</span>'
+            : `<span class="font-label-md text-label-md text-on-surface-variant bg-surface-variant px-3 py-1 rounded-bl-lg">${DAY_FULL[day.weekday].toUpperCase()}</span>`;
+        const dayLabel = isToday
+            ? `<p class="font-label-md text-label-md text-on-surface-variant uppercase mb-1">${DAY_FULL[day.weekday]}</p>`
+            : "";
+
+        return `<article class="${cardClass} rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden">
+            <div class="absolute top-0 right-0">${dayBadge}</div>
+            <div class="mt-6">
+                ${dayLabel}
+                <h3 class="font-display-lg text-headline-lg-mobile md:text-display-lg text-primary tracking-tight mb-2">${esc(goalLift.toUpperCase())}</h3>
+                <p class="font-label-md text-label-md text-primary-container">${day.primary_lift.weight_kg}kg × ${day.primary_lift.reps} reps</p>
+            </div>
+            <div class="bg-surface-container-low rounded-lg p-4">
+                <p class="font-label-md text-label-md text-on-surface-variant mb-3">ACCESSORIES</p>
+                <ul class="flex flex-col gap-2">${accessories}</ul>
+            </div>
+        </article>`;
+    }
+
+    function render(payload) {
+        document.getElementById("week-subtitle").textContent =
+            `Week ${payload.week} • ${PHASE_LABEL[payload.phase] || payload.phase}` +
+            (simDate ? ` · simulating ${simDate}` : "");
+        const today = effectiveToday();
+        const container = document.getElementById("week-container");
+        container.innerHTML = payload.days.map(day => {
+            const isToday = day.date === today;
+            return day.rest ? restRow(day, isToday) : workoutCard(day, payload.goal_lift, isToday);
+        }).join("");
+    }
+
+    function cachedPayload() {
+        try {
+            const raw = localStorage.getItem("tpg_week_cache");
+            if (!raw) return null;
+            const p = JSON.parse(raw);
+            const today = todayISO();
+            // Valid only if today falls within the cached week's date range.
+            if (p.days && p.days.length === 7 && today >= p.days[0].date && today <= p.days[6].date) return p;
+            return null;
+        } catch { return null; }
+    }
+
+    async function load() {
+        if (!simDate) {
+            const cached = cachedPayload();
+            if (cached) { render(cached); return; }
+        }
+        try {
+            const payload = await generateWeek(weeklyPlanId, simDate);
+            if (!simDate) localStorage.setItem("tpg_week_cache", JSON.stringify(payload));
+            render(payload);
+        } catch (err) {
+            document.getElementById("status-msg").textContent = "Could not load this week: " + err.message;
+        }
+    }
+
+    load();
+</script>
+</body>
+</html>

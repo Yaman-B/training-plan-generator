@@ -1,5 +1,6 @@
 from datetime import date
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from tpg.db import (
     load_exercises,
     load_monthly_plan,
@@ -17,7 +18,8 @@ from tpg.planning.monthly import generate_monthly_plan
 from tpg.planning.weekly import generate_weekly_plan
 from tpg.planning.yearly import generate_yearly_plan
 from tpg.schemas.profile import TraineeProfile
-from tpg.session.session import generate_todays_session
+from tpg.session.session import generate_todays_session, generate_week_sessions
+from tpg.session.schedule import week_dates, phase_for_week, WEEKDAY_ORDER
 
 app = FastAPI()
 
@@ -126,7 +128,67 @@ def generate_session_plan_api(weekly_plan_id: int, target_date: date | None = No
     }
 
 
+@app.post("/weekly-plan/{weekly_plan_id}/sessions/week")
+def generate_week_api(weekly_plan_id: int, target_date: date | None = None):
+    # Walk the parent chain the same way the single-session route does.
+    weekly_plan = load_weekly_plan(weekly_plan_id)
+    profile = load_profile(weekly_plan.profile_id)
+    monthly_plan = load_monthly_plan(weekly_plan.monthly_plan_id)
+    yearly_plan = load_yearly_plan(monthly_plan.yearly_plan_id)
+    all_exercises = load_exercises()
+
+    today = target_date or date.today()
+    week_number, dates = week_dates(yearly_plan, today)
+
+    sessions = generate_week_sessions(
+        profile,
+        yearly_plan,
+        weekly_plan,
+        all_exercises,
+        profile_id=weekly_plan.profile_id,
+        weekly_plan_id=weekly_plan_id,
+        today=today,
+    )
+
+    # Save each generated session, keyed by its date so we can slot it into the 7-day grid.
+    saved_by_date = {}
+    for session in sessions:
+        session_id = save_session_plan(session)
+        saved_by_date[session.session_date] = (session_id, session)
+
+    phase = phase_for_week(yearly_plan, week_number)
+
+    days = []
+    for day in dates:
+        weekday = WEEKDAY_ORDER[day.weekday()].value
+        if day in saved_by_date:
+            session_id, session = saved_by_date[day]
+            days.append(
+                {
+                    "date": day.isoformat(),
+                    "weekday": weekday,
+                    "rest": False,
+                    "session_plan_id": session_id,
+                    "primary_lift": session.primary_lift,
+                    "accessories": session.accessories,
+                }
+            )
+        else:
+            days.append({"date": day.isoformat(), "weekday": weekday, "rest": True})
+
+    return {
+        "week": week_number,
+        "phase": phase.value,
+        "goal_lift": profile.goal_lift.value,
+        "days": days,
+    }
+
+
 @app.get("/session/{session_plan_id}")
 def load_session_plan_api(session_plan_id: int):
     session_plan = load_session_plan(session_plan_id)
     return {"session_plan": session_plan}
+
+
+# Static UI, mounted last so it can't shadow any API route above.
+app.mount("/app", StaticFiles(directory="web", html=True), name="web")
