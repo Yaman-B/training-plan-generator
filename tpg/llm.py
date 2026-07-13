@@ -48,7 +48,17 @@ def _generate_claude(prompt: str, format_schema: dict | None = None) -> str:
         }
 
     response = _client.messages.create(**kwargs)
-    return response.content[0].text
+
+    # The reply is a list of content blocks, and the text one isn't always first —
+    # Claude can emit a thinking block ahead of it. Pick out the text block rather
+    # than assuming content[0] is one.
+    for block in response.content:
+        if block.type == "text":
+            return block.text
+
+    raise ValueError(
+        f"Claude returned no text block (got: {[b.type for b in response.content]})"
+    )
 
 
 def generate(prompt: str, format_schema: dict | None = None) -> str:
