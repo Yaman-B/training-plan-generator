@@ -1,10 +1,20 @@
+import atexit
 from typing import TypeVar
 
 from anthropic import Anthropic, transform_schema
 from ollama import chat
 from pydantic import BaseModel, ValidationError
 
-from tpg.config import CLAUDE_MODEL, LLM_PROVIDER, OLLAMA_MODEL
+from tpg.config import CLAUDE_MODEL, LANGFUSE_ENABLED, LLM_PROVIDER, OLLAMA_MODEL
+from tpg.tracing import observe
+
+# LangFuse tracing
+if LANGFUSE_ENABLED:
+    from langfuse import get_client
+    from opentelemetry.instrumentation.anthropic import AnthropicInstrumentor
+
+    AnthropicInstrumentor().instrument() # liste to Anthropic API calls and send traces to LangFuse
+    atexit.register(get_client().flush) # send any remaining traces to LangFuse on exit
 
 _client = Anthropic()  # reads ANTHROPIC_API_KEY from the environment
 
@@ -58,6 +68,7 @@ def generate(prompt: str, format_schema: dict | None = None) -> str:
 T = TypeVar("T", bound=BaseModel)
 
 
+@observe()
 def generate_structured(prompt: str, schema: type[T], max_attempts: int = 3) -> T:
     """Call the LLM and validate its JSON output against `schema`.
 

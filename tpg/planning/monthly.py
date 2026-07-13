@@ -2,6 +2,7 @@ from tpg.llm import generate_structured
 from tpg.schemas.monthly_plan import MonthlyPlan, PhaseMonthlyGeneration
 from tpg.schemas.profile import TraineeProfile
 from tpg.schemas.yearly_plan import LiftTarget, YearlyPlan
+from tpg.tracing import observe
 
 
 def _build_phase_prompt(
@@ -30,6 +31,7 @@ Here is the trainee's profile:
 Return only the JSON object, with no extra text, explanation, or formatting."""
 
 
+@observe()
 def generate_phase_months(
     profile: TraineeProfile,
     from_target: LiftTarget,
@@ -44,6 +46,7 @@ def generate_phase_months(
     return generate_structured(prompt, PhaseMonthlyGeneration)
 
 
+@observe()
 def generate_monthly_plan(
     profile: TraineeProfile,
     yearly_plan: YearlyPlan,

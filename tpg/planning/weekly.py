@@ -3,6 +3,7 @@ from tpg.schemas.weekly_plan import MonthWeeklyGeneration, WeeklyPlan, WEEKS_PER
 from tpg.schemas.monthly_plan import MonthlyPlan
 from tpg.schemas.profile import TraineeProfile
 from tpg.schemas.yearly_plan import LiftTarget
+from tpg.tracing import observe
 
 
 def _build_month_prompt(
@@ -30,6 +31,7 @@ Here is the trainee's profile:
 Return only the JSON object, with no extra text, explanation, or formatting."""
 
 
+@observe()
 def generate_month_weeks(
     profile: TraineeProfile,
     from_target: LiftTarget,
@@ -41,6 +43,7 @@ def generate_month_weeks(
     return generate_structured(prompt, MonthWeeklyGeneration)
 
 
+@observe()
 def generate_weekly_plan(
     profile: TraineeProfile,
     monthly_plan: MonthlyPlan,

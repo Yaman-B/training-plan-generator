@@ -2,6 +2,7 @@ from tpg.schemas.profile import TraineeProfile
 from tpg.db import load_profile, save_yearly_plan
 from tpg.schemas.yearly_plan import YearlyPlan, YearlyPlanGeneration
 from tpg.llm import generate
+from tpg.tracing import observe
 
 
 def _build_prompt(profile: TraineeProfile) -> str:
@@ -35,6 +36,7 @@ Use these exact phase_type values: "mass", "base", "strong".
 Return only the JSON object, with no extra text, explanation, or formatting."""
 
 
+@observe()
 def generate_yearly_plan(profile: TraineeProfile, profile_id: int) -> YearlyPlan:
     """Generate a validated yearly plan for a profile using the LLM."""
     prompt = _build_prompt(profile)

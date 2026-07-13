@@ -20,6 +20,7 @@ from tpg.planning.yearly import generate_yearly_plan
 from tpg.schemas.profile import TraineeProfile
 from tpg.session.session import generate_todays_session, generate_week_sessions
 from tpg.session.schedule import week_dates, phase_for_week, WEEKDAY_ORDER
+from tpg.tracing import observe
 
 app = FastAPI()
 
@@ -44,6 +45,7 @@ def load_profile_api(profile_id: int):
 
 # Full Plan (yearly + monthly + weekly, generated together)
 @app.post("/profile/{profile_id}/plan")
+@observe()
 def generate_full_plan_api(profile_id: int):
     profile = load_profile(profile_id)
 
@@ -129,6 +131,7 @@ def generate_session_plan_api(weekly_plan_id: int, target_date: date | None = No
 
 
 @app.post("/weekly-plan/{weekly_plan_id}/sessions/week")
+@observe()
 def generate_week_api(weekly_plan_id: int, target_date: date | None = None):
     # Walk the parent chain the same way the single-session route does.
     weekly_plan = load_weekly_plan(weekly_plan_id)

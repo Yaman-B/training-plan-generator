@@ -5,7 +5,9 @@ requires-python = ">=3.12"
 dependencies = [
     "anthropic>=0.116.0",
     "fastapi>=0.138.2",
+    "langfuse>=4.14.0",
     "ollama>=0.6.2",
+    "opentelemetry-instrumentation-anthropic>=0.62.1",
     "psycopg2-binary>=2.9.12",
     "pydantic>=2.13.4",
     "python-dotenv>=1.2.2",

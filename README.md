@@ -36,6 +36,14 @@ server, an Anthropic API key.
    ```
    ANTHROPIC_API_KEY=your-key-here
    ```
+   Optionally add [Langfuse](https://cloud.langfuse.com) credentials to trace every LLM
+   call (prompts, responses, tokens, cost, retries). Tracing switches itself off if these
+   are absent, so they aren't required to run the app:
+   ```
+   LANGFUSE_PUBLIC_KEY=pk-lf-...
+   LANGFUSE_SECRET_KEY=sk-lf-...
+   LANGFUSE_BASE_URL=https://cloud.langfuse.com
+   ```
 
 ## Running it
 
@@ -74,6 +82,7 @@ tpg/
   planning/    Planning Flow generators (yearly, monthly, weekly)
   session/     Session Flow: eligibility filtering, scheduling, session generation
   llm.py       LLM provider abstraction (Claude / Ollama) + structured-output validation
+  tracing.py   Langfuse `observe` decorator (a no-op when tracing is off)
   db.py        All Postgres access (save_*/load_* functions)
   main.py      FastAPI app
   questionnaire.py   Terminal questionnaire
@@ -91,11 +100,31 @@ Served directly by FastAPI (`StaticFiles` mounted at `/app`), no separate fronte
 or build step, plain HTML/CSS (Tailwind via CDN)/JS. Identity is a `profile_id` kept in the
 browser's `localStorage`, there's no login.
 
+## Observability (Langfuse)
+
+Every LLM call is traced when Langfuse credentials are present. The Anthropic SDK is
+auto-instrumented in `tpg/llm.py`, so calls are captured without touching any call site,
+and `@observe()` decorators on the generator functions nest those calls into a readable
+tree. One plan generation becomes a single trace:
+
+```
+generate_week_api                         15.3s   $0.0122
+└─ generate_week_sessions
+   ├─ generate_todays_session             (training day)
+   │  └─ generate_session_accessories
+   │     └─ generate_structured
+   │        └─ anthropic.chat             1007 tok  $0.0030
+   └─ generate_todays_session             (rest day: no LLM call)
+```
+
+Most usefully, the retry-with-feedback loop in `generate_structured` becomes visible —
+each attempt shows up as its own call under one span, so a validation failure and its
+recovery are no longer invisible.
+
 ## Not yet built
 
-- **LangGraph** (orchestration) and **Langfuse** (tracing). Deliberately deferred until
-  the core logic (both flows) was stable. Still an open question whether LangGraph adds
-  real value here, since it would mostly formalize control flow that already works today
-  as plain Python.
+- **LangGraph** (orchestration). Deliberately deferred; still an open question whether it
+  adds real value here, since it would mostly formalize control flow that already works
+  today as plain Python.
 - **A Profile view/edit page, workout logging/history, and real plan-generation progress
   reporting.** None of these have backend support yet.

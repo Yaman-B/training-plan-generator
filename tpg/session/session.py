@@ -8,6 +8,7 @@ from tpg.schemas.weekly_plan import WeeklyPlan
 from tpg.schemas.exercise import Exercise
 from tpg.session.schedule import compute_training_context, phase_for_week, week_dates
 from tpg.session.eligibility import eligible_exercises
+from tpg.tracing import observe
 
 
 def _build_session_prompt(
@@ -30,6 +31,7 @@ Prescribe sets and reps appropriate for the {phase.value} phase. Pick a balanced
 Return only the JSON object, with no extra text, explanation, or formatting."""
 
 
+@observe()
 def generate_session_accessories(
     profile: TraineeProfile,
     phase: PhaseType,
@@ -41,6 +43,7 @@ def generate_session_accessories(
     return generate_structured(prompt, SessionGeneration)
 
 
+@observe()
 def generate_todays_session(
     profile: TraineeProfile,
     yearly_plan: YearlyPlan,
@@ -76,6 +79,7 @@ def generate_todays_session(
     )
 
 
+@observe()
 def generate_week_sessions(
     profile: TraineeProfile,
     yearly_plan: YearlyPlan,
