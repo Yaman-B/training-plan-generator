@@ -1,5 +1,5 @@
-from datetime import date
-from typing import Optional, Tuple
+from datetime import date, timedelta
+from typing import List, Optional, Tuple
 from tpg.schemas.profile import TraineeProfile, Weekday
 from tpg.schemas.yearly_plan import YearlyPlan, PhaseType
 from tpg.schemas.weekly_plan import WEEKS_PER_MONTH, WEEKS_PER_YEAR
@@ -33,6 +33,23 @@ def compute_training_context(
     ordered_training_days = sorted(profile.training_days, key=WEEKDAY_ORDER.index)
     day_index = ordered_training_days.index(todays_weekday) + 1
     return week_number, day_index
+
+
+def week_dates(yearly_plan: YearlyPlan, today: date) -> Tuple[int, List[date]]:
+    """Return (week_number, the 7 consecutive dates) for the plan-week containing today.
+
+    A plan-week is a 7-day block measured from the plan's start_date (not a calendar
+    Mon-Sun week), so all 7 dates fall in the same week_number as today.
+    """
+    elapsed_days = (today - yearly_plan.start_date).days
+    if elapsed_days < 0:
+        raise ValueError("today is before the plan's start_date")
+    week_number = elapsed_days // 7 + 1
+    if week_number > WEEKS_PER_YEAR:
+        raise ValueError("today is past the end of the 48-week plan")
+
+    week_start = yearly_plan.start_date + timedelta(days=(week_number - 1) * 7)
+    return week_number, [week_start + timedelta(days=i) for i in range(7)]
 
 
 def phase_for_week(yearly_plan: YearlyPlan, week_number: int) -> PhaseType:

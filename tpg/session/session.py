@@ -6,7 +6,7 @@ from tpg.schemas.profile import TraineeProfile
 from tpg.schemas.yearly_plan import YearlyPlan, LiftTarget, PhaseType
 from tpg.schemas.weekly_plan import WeeklyPlan
 from tpg.schemas.exercise import Exercise
-from tpg.session.schedule import compute_training_context, phase_for_week
+from tpg.session.schedule import compute_training_context, phase_for_week, week_dates
 from tpg.session.eligibility import eligible_exercises
 
 
@@ -74,6 +74,39 @@ def generate_todays_session(
         primary_lift=weekly_target.target,
         accessories=generation.accessories,
     )
+
+
+def generate_week_sessions(
+    profile: TraineeProfile,
+    yearly_plan: YearlyPlan,
+    weekly_plan: WeeklyPlan,
+    all_exercises: List[Exercise],
+    profile_id: int,
+    weekly_plan_id: int,
+    today: Optional[date] = None,
+) -> List[SessionPlan]:
+    """Build a full workout for every training day of the plan-week containing today.
+
+    Runs the existing per-day generator across the week's 7 dates and keeps the training
+    days (rest days come back as None). Returns them in date order.
+    """
+    today = today or date.today()
+    _, dates = week_dates(yearly_plan, today)
+
+    sessions = []
+    for day in dates:
+        session = generate_todays_session(
+            profile,
+            yearly_plan,
+            weekly_plan,
+            all_exercises,
+            profile_id=profile_id,
+            weekly_plan_id=weekly_plan_id,
+            today=day,
+        )
+        if session is not None:
+            sessions.append(session)
+    return sessions
 
 
 # testing
