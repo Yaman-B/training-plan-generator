@@ -69,6 +69,23 @@ screen (linked from the week view) that surfaces what the LLM actually produced 
 yearly phases and the twelve monthly targets climbing to the goal. Interactive API docs (try
 requests directly in the browser) are at `http://127.0.0.1:8000/docs`.
 
+## Tests
+
+```
+uv run pytest
+```
+
+62 tests, well under a second. They are **fast, offline and free**: no network, no database,
+no API key needed, so they can be run constantly. Everything in `tests/` obeys that rule —
+anything that talks to Claude or Postgres is a manual smoke script in `scripts/` instead
+(`smoke_llm.py`, `smoke_generate_structured.py`), which is why those are not named `test_*`.
+
+They cover the parts where a bug is silent rather than loud: every Pydantic validator (the
+rules that stop a plausible-looking LLM response from being quietly wrong), the deterministic
+exercise filter, the calendar math, and the way the generators chain each step from the
+previous one's result. The LLM is stubbed at the per-unit seam, so the orchestration is
+tested without ever calling the API.
+
 ## API reference
 
 | Method | Path | Description |
