@@ -73,6 +73,20 @@ class YearlyPlanGeneration(StrictModel):
             raise ValueError("Total duration of all phases must equal 12 months.")
         return self
 
+    @model_validator(mode="after")
+    def validate_reaches_yearly_goal(self):
+        # The plan must actually arrive at the goal it is built around: the last phase's
+        # goal IS the yearly goal. Without this the LLM can produce a plan that stops
+        # short (it has: a stored plan ran 75 -> 80 -> 90 kg against a 100 kg goal).
+        final_goal = self.phases[-1].phase_goal
+        if final_goal != self.yearly_goal:
+            raise ValueError(
+                "The final phase's goal must equal the yearly goal "
+                f"(got {final_goal.weight_kg} kg x {final_goal.reps} reps, expected "
+                f"{self.yearly_goal.weight_kg} kg x {self.yearly_goal.reps} reps)."
+            )
+        return self
+
 
 class YearlyPlan(YearlyPlanGeneration):
     """Full stored plan: generated content plus bookkeeping fields."""

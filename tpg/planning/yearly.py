@@ -1,7 +1,7 @@
 from tpg.schemas.profile import TraineeProfile
 from tpg.db import load_profile, save_yearly_plan
 from tpg.schemas.yearly_plan import YearlyPlan, YearlyPlanGeneration
-from tpg.llm import generate
+from tpg.llm import generate_structured
 from tpg.tracing import observe
 
 
@@ -43,29 +43,28 @@ Here is the trainee's profile:
 {goal_notes}
 Design the three phases so the trainee progresses sensibly from their current baseline toward their one-year goal, with each phase's goal building on the previous one.
 
+The final (strong) phase's goal MUST be exactly the one-year goal: {profile.target_weight} kg for {profile.rep_target} reps. The plan has to actually reach the goal it is built around — do not stop short of it.
+
 Use these exact phase_type values: "mass", "base", "strong".
 Return only the JSON object, with no extra text, explanation, or formatting."""
 
 
 @observe()
 def generate_yearly_plan(profile: TraineeProfile, profile_id: int) -> YearlyPlan:
-    """Generate a validated yearly plan for a profile using the LLM."""
-    prompt = _build_prompt(profile)
-    schema = YearlyPlanGeneration.model_json_schema()
+    """Generate a validated yearly plan for a profile using the LLM.
 
-    # Call the LLM with the schema constraint (structured output).
-    raw_json = generate(prompt, format_schema=schema)
+    Goes through generate_structured like every other generator, so a malformed or
+    incoherent response is retried with the validation error fed back into the prompt
+    rather than crashing outright. Everything downstream derives from this plan.
+    """
+    generated = generate_structured(_build_prompt(profile), YearlyPlanGeneration)
 
-    # Parse + validate the LLM's output.
-    generated = YearlyPlanGeneration.model_validate_json(raw_json)
-
-    # Attach profile_id and other fields to produce the final YearlyPlan object.
-    plan = YearlyPlan(
+    # Attach the bookkeeping fields to produce the final stored YearlyPlan.
+    return YearlyPlan(
         profile_id=profile_id,
         yearly_goal=generated.yearly_goal,
         phases=generated.phases,
     )
-    return plan
 
 
 # testing
