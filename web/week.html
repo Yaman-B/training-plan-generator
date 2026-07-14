@@ -43,6 +43,38 @@
     body { background-color: #051424; color: #d4e4fa; min-height: max(884px, 100dvh); }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     .glow-shadow { box-shadow: 0 0 25px -5px rgba(195, 244, 0, 0.4); }
+
+    /* Tick-off checkboxes.
+       Purely visual: state lives in the DOM, so a reload clears it. */
+    input.tick {
+        appearance: none; -webkit-appearance: none;
+        width: 22px; height: 22px; flex: 0 0 22px;
+        border: 2px solid #44586e; border-radius: 6px;
+        background-color: transparent; background-image: none;
+        cursor: pointer;
+        display: grid; place-content: center;
+        transition: background-color .12s ease, border-color .12s ease;
+    }
+    input.tick:hover { border-color: #c3f400; }
+    input.tick:checked,
+    input.tick:checked:hover,
+    input.tick:checked:focus {
+        background-color: #c3f400; border-color: #c3f400; background-image: none;
+    }
+    input.tick:checked::after {
+        content: ""; width: 11px; height: 6px;
+        border-left: 2.5px solid #051424; border-bottom: 2.5px solid #051424;
+        transform: rotate(-45deg) translateY(-1px);
+    }
+
+    input.tick:focus { box-shadow: none; outline: none; }
+    input.tick:focus-visible { outline: 2px solid #c3f400; outline-offset: 2px; }
+
+    [data-tickrow].done .tick-target {
+        text-decoration: line-through;
+        opacity: 0.45;
+        transition: opacity .12s ease;
+    }
 </style>
 </head>
 <body class="bg-background text-on-background font-body-md min-h-screen pb-32">
@@ -98,9 +130,12 @@
 
     function workoutCard(day, goalLift, isToday) {
         const accessories = day.accessories.map(a => `
-            <li class="flex justify-between items-center border-b border-surface-variant/60 pb-2 last:border-0 last:pb-0">
-                <span class="font-body-md text-body-md text-on-surface">${esc(a.name)}</span>
-                <span class="font-label-md text-label-md text-on-surface-variant">${a.sets} × ${a.reps}</span>
+            <li class="flex justify-between items-center gap-3 border-b border-surface-variant/60 pb-2 last:border-0 last:pb-0" data-tickrow>
+                <div class="flex items-center gap-3 min-w-0">
+                    <input type="checkbox" class="tick" aria-label="Mark ${esc(a.name)} as done"/>
+                    <span class="tick-target font-body-md text-body-md text-on-surface truncate">${esc(a.name)}</span>
+                </div>
+                <span class="tick-target font-label-md text-label-md text-on-surface-variant whitespace-nowrap">${a.sets} × ${a.reps}</span>
             </li>`).join("");
 
         const cardClass = isToday
@@ -115,10 +150,13 @@
 
         return `<article class="${cardClass} rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden">
             <div class="absolute top-0 right-0">${dayBadge}</div>
-            <div class="mt-6">
-                ${dayLabel}
-                <h3 class="font-display-lg text-headline-lg-mobile md:text-display-lg text-primary tracking-tight mb-2">${esc(goalLift.toUpperCase())}</h3>
-                <p class="font-label-md text-label-md text-primary-container">${day.primary_lift.weight_kg}kg × ${day.primary_lift.reps} reps</p>
+            <div class="mt-6 flex items-start gap-3" data-tickrow>
+                <input type="checkbox" class="tick mt-1.5" aria-label="Mark ${esc(goalLift)} as done"/>
+                <div class="tick-target min-w-0">
+                    ${dayLabel}
+                    <h3 class="font-display-lg text-headline-lg-mobile md:text-display-lg text-primary tracking-tight mb-2">${esc(goalLift.toUpperCase())}</h3>
+                    <p class="font-label-md text-label-md text-primary-container">${day.primary_lift.weight_kg}kg × ${day.primary_lift.reps} reps</p>
+                </div>
             </div>
             <div class="bg-surface-container-low rounded-lg p-4">
                 <p class="font-label-md text-label-md text-on-surface-variant mb-3">ACCESSORIES</p>
@@ -150,6 +188,16 @@
             return null;
         } catch { return null; }
     }
+
+    // Tick-off behaviour. Delegated on the container because the cards are re-rendered
+    // via innerHTML, which would throw away any per-element listeners. Nothing is
+    // persisted or sent anywhere: this is a scratchpad for the current session only.
+    document.getElementById("week-container").addEventListener("change", (event) => {
+        const box = event.target;
+        if (!box.classList.contains("tick")) return;
+        const row = box.closest("[data-tickrow]");
+        if (row) row.classList.toggle("done", box.checked);
+    });
 
     async function load() {
         // Redirect AND stop: location.replace doesn't halt this script, so without the
