@@ -46,8 +46,11 @@
 </style>
 </head>
 <body class="bg-background text-on-background font-body-md min-h-screen pb-32">
-<header class="w-full top-0 sticky bg-surface flex items-center justify-center px-container-margin h-touch-target z-50">
-<h1 class="font-display-lg text-headline-md text-primary uppercase italic tracking-tight">TPG</h1>
+<header class="w-full top-0 sticky bg-surface flex items-center px-container-margin h-touch-target z-50">
+<h1 class="font-display-lg text-headline-md text-primary uppercase italic tracking-tight flex-1">TPG</h1>
+<a href="plan.html" class="flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md uppercase">
+<span class="material-symbols-outlined text-[20px]">insights</span> My Plan
+</a>
 </header>
 
 <main class="max-w-screen-md mx-auto px-container-margin pt-section-gap flex flex-col gap-stack-gap">
@@ -63,7 +66,6 @@
 <script src="js/api.js"></script>
 <script>
     const weeklyPlanId = localStorage.getItem("tpg_weekly_plan_id");
-    if (!weeklyPlanId) { window.location.href = "index.html"; }
 
     // Dev/testing aid: ?date=YYYY-MM-DD simulates a different "today" so you can see the
     // styled week view at any point in the plan. When set, we skip the cache and pass the
@@ -150,6 +152,9 @@
     }
 
     async function load() {
+        // Redirect AND stop: location.replace doesn't halt this script, so without the
+        // return we'd still fire a request with a null id.
+        if (!weeklyPlanId) { window.location.replace("index.html"); return; }
         if (!simDate) {
             const cached = cachedPayload();
             if (cached) { render(cached); return; }

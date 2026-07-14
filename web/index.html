@@ -318,6 +318,8 @@
             const plan = await generatePlan(profileId);
             clearInterval(progress);
             localStorage.setItem("tpg_weekly_plan_id", plan.weekly_plan_id);
+            localStorage.setItem("tpg_monthly_plan_id", plan.monthly_plan_id);
+            localStorage.setItem("tpg_yearly_plan_id", plan.yearly_plan_id);
             window.location.href = "week.html";
         } catch (err) {
             clearInterval(progress);

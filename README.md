@@ -63,9 +63,11 @@ uv run python scripts/run_questionnaire.py
 ```
 uv run uvicorn tpg.main:app --reload
 ```
-Open `http://127.0.0.1:8000/app/` for the web UI (onboarding form, then a "This Week" view
-showing every training day of the current week with today highlighted). Interactive API docs
-(try requests directly in the browser) are at `http://127.0.0.1:8000/docs`.
+Open `http://127.0.0.1:8000/app/` for the web UI: an onboarding form, then a "This Week" view
+showing every training day of the current week with today highlighted, and a "Your Plan"
+screen (linked from the week view) that surfaces what the LLM actually produced — the three
+yearly phases and the twelve monthly targets climbing to the goal. Interactive API docs (try
+requests directly in the browser) are at `http://127.0.0.1:8000/docs`.
 
 ## API reference
 
@@ -100,6 +102,7 @@ schema.sql     Hand-maintained snapshot of the Postgres schema
 web/
   index.html   Onboarding form + plan-generation loading state
   week.html    "This Week" view: every training day of the week, today highlighted
+  plan.html    "Your Plan": the yearly phases + monthly targets the LLM produced
   js/api.js    Fetch wrappers around the API above
 ```
 

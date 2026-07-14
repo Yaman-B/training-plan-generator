@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TPG — Your Plan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&amp;family=Lexend:wght@700;800&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: { extend: {
+            "colors": {
+                "surface-container-low": "#0d1c2d", "surface-variant": "#273647",
+                "surface-container-high": "#1c2b3c", "on-surface-variant": "#c4c9ac",
+                "primary": "#ffffff", "on-surface": "#d4e4fa",
+                "surface": "#051424", "surface-container-highest": "#273647",
+                "primary-container": "#c3f400", "on-primary-container": "#556d00",
+                "background": "#051424", "surface-container": "#122131"
+            },
+            "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+            "spacing": { "touch-target": "48px", "container-margin": "20px", "inner-padding": "12px", "section-gap": "32px", "stack-gap": "16px" },
+            "fontFamily": {
+                "body-md": ["Inter"], "display-lg": ["Lexend"], "body-lg": ["Inter"],
+                "headline-lg-mobile": ["Lexend"], "headline-md": ["Lexend"],
+                "label-md": ["JetBrains Mono"], "headline-lg": ["Lexend"]
+            },
+            "fontSize": {
+                "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                "display-lg": ["44px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+            }
+        } }
+    }
+</script>
+<style>
+    body { background-color: #051424; color: #d4e4fa; min-height: max(884px, 100dvh); }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    /* Chart ink. #7a9e00 is the brand lime snapped to the nearest step that passes the
+       dark-mode checks (lightness band, chroma floor, 5.93:1 contrast on this surface).
+       The raw brand lime #c3f400 is too light for a data mark here. */
+    .series      { stroke: #7a9e00; }
+    .series-fill { fill: #7a9e00; }
+    .grid        { stroke: #1c2b3c; stroke-width: 1; }   /* solid hairline, recessive */
+    .axis-text   { fill: #c4c9ac; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+    .band        { fill: #0d1c2d; }
+    .band-alt    { fill: #122131; }
+    .dot-ring    { stroke: #051424; stroke-width: 2; }   /* 2px surface ring */
+    #tooltip {
+        position: fixed; pointer-events: none; opacity: 0; transition: opacity .12s;
+        background: #1c2b3c; border: 1px solid #273647; border-radius: 8px;
+        padding: 6px 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+        color: #d4e4fa; white-space: nowrap; z-index: 60;
+    }
+    [hidden] { display: none !important; }
+</style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen pb-24">
+
+<header class="w-full top-0 sticky bg-surface flex items-center px-container-margin h-touch-target z-50">
+<a href="week.html" class="text-on-surface-variant flex items-center hover:opacity-80" aria-label="Back to this week">
+<span class="material-symbols-outlined">arrow_back</span>
+</a>
+<h1 class="font-display-lg text-headline-md text-primary uppercase italic tracking-tight flex-1 text-center pr-6">TPG</h1>
+</header>
+
+<main class="max-w-screen-md mx-auto px-container-margin pt-section-gap">
+
+<div class="mb-stack-gap">
+<h2 class="font-headline-lg text-headline-lg text-primary tracking-tight">Your Plan</h2>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1 uppercase" id="subtitle">Loading…</p>
+</div>
+
+<p id="error" hidden class="font-body-md text-body-md mb-stack-gap p-3 rounded-lg" style="background:#93000a;color:#ffdad6;"></p>
+
+<div id="content" hidden>
+  <!-- Progression chart: the 12 monthly targets over time, one series. -->
+  <section class="bg-surface-container-high rounded-xl p-4 mb-section-gap">
+    <h3 class="font-label-md text-label-md text-on-surface-variant uppercase mb-1" id="chart-title">Projected progression</h3>
+    <p class="font-body-md text-body-md text-on-surface-variant mb-3 text-sm" id="chart-sub"></p>
+    <svg id="chart" width="100%" viewBox="0 0 340 190" role="img" aria-labelledby="chart-title"></svg>
+  </section>
+
+  <!-- The three phases, each holding the months that fall inside it.
+       This doubles as the chart's table view: every value is readable as text. -->
+  <div id="phases" class="flex flex-col gap-stack-gap"></div>
+</div>
+</main>
+
+<div id="tooltip" role="status"></div>
+
+<script src="js/api.js"></script>
+<script>
+    const PHASE_LABEL = { mass: "Mass · Hypertrophy", base: "Base Building", strong: "Strong · Strength" };
+    const profileId = localStorage.getItem("tpg_profile_id");
+    const weeklyPlanId = localStorage.getItem("tpg_weekly_plan_id");
+
+    const showError = (m) => {
+        const el = document.getElementById("error");
+        el.textContent = m; el.hidden = false;
+        document.getElementById("subtitle").textContent = "";
+    };
+
+    // Older sessions only stored the weekly plan id, so walk the chain when the
+    // yearly/monthly ids are missing, and cache them for next time.
+    async function loadPlans() {
+        let monthlyId = localStorage.getItem("tpg_monthly_plan_id");
+        if (!monthlyId) {
+            const wk = await getWeeklyPlan(weeklyPlanId);
+            monthlyId = wk.weekly_plan.monthly_plan_id;
+            localStorage.setItem("tpg_monthly_plan_id", monthlyId);
+        }
+        const monthly = (await getMonthlyPlan(monthlyId)).monthly_plan;
+
+        let yearlyId = localStorage.getItem("tpg_yearly_plan_id") || monthly.yearly_plan_id;
+        localStorage.setItem("tpg_yearly_plan_id", yearlyId);
+        const yearly = (await getYearlyPlan(yearlyId)).yearly_plan;
+
+        const profile = profileId ? (await getProfile(profileId)).profile : null;
+        return { monthly, yearly, profile };
+    }
+
+    function drawChart(months, phases) {
+        const W = 340, H = 190, L = 34, R = 8, T = 14, B = 26;   // plot padding
+        const pw = W - L - R, ph = H - T - B;
+        const vals = months.map(m => m.target.weight_kg);
+
+        // Position-encoded line, so a non-zero baseline is honest here (it would NOT
+        // be for bars). Pad the domain a little so the line doesn't touch the frame.
+        const lo = Math.min(...vals), hi = Math.max(...vals);
+        const pad = Math.max((hi - lo) * 0.15, 1);
+        const y0 = lo - pad, y1 = hi + pad;
+        const x = (m) => L + ((m - 1) / 11) * pw;
+        const y = (v) => T + ph - ((v - y0) / (y1 - y0)) * ph;
+
+        const parts = [];
+
+        // Phase bands behind the plot: recessive surface tones, no hue, so they read
+        // as zones rather than as a second data series.
+        phases.forEach((p, i) => {
+            const end = p.start_month + p.duration_months - 1;
+            const x0 = x(p.start_month) - (p.start_month === 1 ? 0 : pw / 22);
+            const x1 = x(end) + (end === 12 ? 0 : pw / 22);
+            parts.push(`<rect x="${x0}" y="${T}" width="${x1 - x0}" height="${ph}" class="${i % 2 ? "band-alt" : "band"}" rx="3"/>`);
+            // Band labels sit at the BOTTOM of the plot: the series climbs left-to-right,
+            // so the top-right is occupied by the endpoint label and would collide there.
+            parts.push(`<text x="${(x0 + x1) / 2}" y="${T + ph - 5}" class="axis-text" text-anchor="middle" opacity="0.75">${p.phase_type.toUpperCase()}</text>`);
+        });
+
+        // Recessive solid hairline gridlines + y ticks.
+        for (let i = 0; i <= 3; i++) {
+            const v = y0 + (i / 3) * (y1 - y0), yy = y(v);
+            parts.push(`<line x1="${L}" y1="${yy}" x2="${W - R}" y2="${yy}" class="grid"/>`);
+            parts.push(`<text x="${L - 6}" y="${yy + 3}" class="axis-text" text-anchor="end">${Math.round(v)}</text>`);
+        }
+
+        // Area + line (single series -> no legend needed; the title names it).
+        const line = months.map(m => `${x(m.month)},${y(m.target.weight_kg)}`).join(" ");
+        parts.push(`<polygon points="${L},${T + ph} ${line} ${W - R},${T + ph}" class="series-fill" opacity="0.14"/>`);
+        parts.push(`<polyline points="${line}" class="series" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`);
+
+        // Sparse x labels, so 12 ticks don't collide on a phone.
+        [1, 4, 8, 12].forEach(m => {
+            parts.push(`<text x="${x(m)}" y="${H - 8}" class="axis-text" text-anchor="middle">M${m}</text>`);
+        });
+
+        months.forEach(m => {
+            const cx = x(m.month), cy = y(m.target.weight_kg);
+            parts.push(`<circle cx="${cx}" cy="${cy}" r="3.5" class="series-fill dot-ring"/>`);
+            // Generous invisible hit target (the visible dot is far too small to aim at).
+            parts.push(`<circle cx="${cx}" cy="${cy}" r="14" fill="transparent" class="hit"
+                         data-month="${m.month}" data-w="${m.target.weight_kg}" data-r="${m.target.reps}"/>`);
+        });
+
+        // Direct-label the endpoint only — it's the one that matters (it shows the plan
+        // lands on the goal). The starting value is already in the subtitle, the phase
+        // list and the tooltip, so labelling it here would just crowd the line.
+        const last = months[months.length - 1];
+        parts.push(`<text x="${x(12)}" y="${y(last.target.weight_kg) - 9}" class="axis-text" text-anchor="end" fill="#d4e4fa">${last.target.weight_kg}kg</text>`);
+
+        const svg = document.getElementById("chart");
+        svg.innerHTML = parts.join("");
+
+        const tip = document.getElementById("tooltip");
+        svg.querySelectorAll(".hit").forEach(node => {
+            const show = (e) => {
+                const d = node.dataset;
+                tip.textContent = `Month ${d.month} · ${d.w}kg × ${d.r} reps`;
+                tip.style.opacity = 1;
+                const p = e.touches ? e.touches[0] : e;
+                tip.style.left = Math.min(p.clientX + 12, window.innerWidth - 160) + "px";
+                tip.style.top = (p.clientY - 34) + "px";
+            };
+            node.addEventListener("mouseenter", show);
+            node.addEventListener("mousemove", show);
+            node.addEventListener("mouseleave", () => { tip.style.opacity = 0; });
+        });
+    }
+
+    function renderPhases(months, phases, yearlyGoal) {
+        const container = document.getElementById("phases");
+        container.innerHTML = phases.map(p => {
+            const end = p.start_month + p.duration_months - 1;
+            const inPhase = months.filter(m => m.month >= p.start_month && m.month <= end);
+            const rows = inPhase.map(m => {
+                const isPhaseGoal = m.month === end;
+                return `<li class="flex justify-between items-center py-2 border-b border-surface-variant/50 last:border-0">
+                    <span class="font-body-md text-body-md ${isPhaseGoal ? "text-primary" : "text-on-surface-variant"}">Month ${m.month}</span>
+                    <span class="font-label-md text-label-md ${isPhaseGoal ? "text-primary" : "text-on-surface"}">
+                        ${m.target.weight_kg}kg × ${m.target.reps}${isPhaseGoal ? ' <span class="text-on-surface-variant">· phase goal</span>' : ""}
+                    </span>
+                </li>`;
+            }).join("");
+            return `<section class="bg-surface-container-high rounded-xl p-4">
+                <div class="flex justify-between items-baseline mb-2">
+                    <h3 class="font-headline-md text-headline-md text-primary">${PHASE_LABEL[p.phase_type] || p.phase_type}</h3>
+                    <span class="font-label-md text-label-md text-on-surface-variant uppercase">Months ${p.start_month}–${end}</span>
+                </div>
+                <p class="font-label-md text-label-md text-on-surface-variant mb-2">
+                    TARGET BY END: <span class="text-on-surface">${p.phase_goal.weight_kg}kg × ${p.phase_goal.reps}</span>
+                </p>
+                <ul class="mt-1">${rows}</ul>
+            </section>`;
+        }).join("") + `<p class="font-body-md text-body-md text-on-surface-variant text-center mt-2 text-sm">
+            Month 12 lands on the one-year goal: <span class="text-on-surface">${yearlyGoal.weight_kg}kg × ${yearlyGoal.reps}</span>.
+        </p>`;
+    }
+
+    (async function () {
+        // Redirect AND stop: setting location.href doesn't halt this script, so without
+        // the return we'd still fire a fetch with a null id (a pointless 422).
+        if (!weeklyPlanId) { window.location.replace("index.html"); return; }
+        try {
+            const { monthly, yearly, profile } = await loadPlans();
+            const months = [...monthly.months].sort((a, b) => a.month - b.month);
+            const phases = [...yearly.phases].sort((a, b) => a.start_month - b.start_month);
+
+            const lift = profile ? profile.goal_lift : "primary lift";
+            document.getElementById("subtitle").textContent =
+                `${lift} · ${yearly.yearly_goal.weight_kg}kg × ${yearly.yearly_goal.reps} in 12 months`;
+            document.getElementById("chart-sub").textContent = profile
+                ? `${lift}: ${profile.baseline_weight}kg → ${yearly.yearly_goal.weight_kg}kg`
+                : "Monthly targets across the year";
+
+            document.getElementById("content").hidden = false;
+            drawChart(months, phases);
+            renderPhases(months, phases, yearly.yearly_goal);
+        } catch (err) {
+            showError("Could not load your plan: " + err.message);
+        }
+    })();
+</script>
+</body>
+</html>

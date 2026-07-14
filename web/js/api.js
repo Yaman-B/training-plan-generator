@@ -25,3 +25,20 @@ function generateWeek(weeklyPlanId, targetDate) {
   const query = targetDate ? `?target_date=${targetDate}` : "";
   return request(`/weekly-plan/${weeklyPlanId}/sessions/week${query}`, { method: "POST" });
 }
+
+// Read-only fetches, used by the plan-inspection screen.
+function getProfile(profileId) {
+  return request(`/profile/${profileId}`, { method: "GET" });
+}
+
+function getWeeklyPlan(weeklyPlanId) {
+  return request(`/weekly-plan/${weeklyPlanId}`, { method: "GET" });
+}
+
+function getMonthlyPlan(monthlyPlanId) {
+  return request(`/monthly-plan/${monthlyPlanId}`, { method: "GET" });
+}
+
+function getYearlyPlan(yearlyPlanId) {
+  return request(`/yearly-plan/${yearlyPlanId}`, { method: "GET" });
+}
