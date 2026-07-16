@@ -1,7 +1,9 @@
-from tpg.schemas.profile import TraineeProfile
 from tpg.db import load_profile, save_yearly_plan
-from tpg.schemas.yearly_plan import YearlyPlan, YearlyPlanGeneration
+from tpg.eval.judge import judge_yearly_plan
 from tpg.llm import generate_structured
+from tpg.schemas.judgement import JudgementGeneration
+from tpg.schemas.profile import TraineeProfile
+from tpg.schemas.yearly_plan import YearlyPlan, YearlyPlanGeneration
 from tpg.tracing import observe
 
 
@@ -33,7 +35,9 @@ The yearly plan is a high-level roadmap only. For each of the three phases, it s
 
 The yearly plan does NOT contain individual workouts, exercises, sets, or weekly schedules. Those are decided later at finer levels of detail. Do not include them.
 
-The three phases together must cover exactly 12 months with no gaps or overlaps.
+The three phases together must cover exactly 12 months with no gaps or overlaps. How those 12 months are divided is YOUR decision, and it should follow from this specific trainee. Each phase may run from 2 to 7 months. An even 4/4/4 split is allowed but is not a default — choose it only if it genuinely suits this trainee, not because it is tidy. As a guide: a beginner benefits from a longer mass phase, since they have the most muscle to build and little to peak; an advanced lifter closer to their ceiling benefits from longer base building and a longer peak.
+
+The load should also climb at a sensible rate across the year. Progress generally slows as a lifter approaches their ceiling, so the gain per month should taper rather than accelerate, and no single phase should carry almost all of the year's climb.
 
 Here is the trainee's profile:
 - Experience level: {profile.experience_level.value}
@@ -48,15 +52,43 @@ The final (strong) phase's goal MUST be exactly the one-year goal: {profile.targ
 Use these exact phase_type values: "mass", "base", "strong".
 Return only the JSON object, with no extra text, explanation, or formatting."""
 
+def _build_revision_prompt(
+    profile: TraineeProfile, plan: YearlyPlan, review: JudgementGeneration
+) -> str:
+    """Ask the planner to revise a plan in light of the judge's review.
+    Reuses the original task prompt verbatim, then appends what the planner produced and
+    what the reviewer said about it.
+    """
+    phases = "\n".join(
+        f"- {phase.phase_type.value}: months {phase.start_month}-{phase.end_month}, "
+        f"goal {phase.phase_goal.weight_kg} kg x {phase.phase_goal.reps} reps"
+        for phase in plan.phases
+    )
+
+    return f"""{_build_prompt(profile)}
+
+---
+
+You already produced this plan:
+{phases}
+
+An independent reviewer scored it out of 10:
+
+progression_rate: {review.progression_rate.score}/10
+  {review.progression_rate.rationale}
+
+phase_proportioning: {review.phase_proportioning.score}/10
+  {review.phase_proportioning.rationale}
+
+Produce an improved plan that addresses this criticism. Change what the review objects to; keep what it does not. Every rule in the original task above still applies, including reaching exactly the stated one-year goal.
+
+The reviewer cannot change the trainee's goal and neither can you — do not lower it to make the progression easier to justify.
+
+Return only the JSON object, with no extra text, explanation, or formatting."""
 
 @observe()
 def generate_yearly_plan(profile: TraineeProfile, profile_id: int) -> YearlyPlan:
-    """Generate a validated yearly plan for a profile using the LLM.
-
-    Goes through generate_structured like every other generator, so a malformed or
-    incoherent response is retried with the validation error fed back into the prompt
-    rather than crashing outright. Everything downstream derives from this plan.
-    """
+    """Generate a validated yearly plan for a profile using the LLM.s"""
     generated = generate_structured(_build_prompt(profile), YearlyPlanGeneration)
 
     # Attach the bookkeeping fields to produce the final stored YearlyPlan.
@@ -65,6 +97,42 @@ def generate_yearly_plan(profile: TraineeProfile, profile_id: int) -> YearlyPlan
         yearly_goal=generated.yearly_goal,
         phases=generated.phases,
     )
+
+@observe()
+def generate_reviewed_yearly_plan(
+    profile: TraineeProfile,
+    profile_id: int,
+    max_rounds: int = 3,
+    target_score: int = 7,
+) -> tuple[YearlyPlan, JudgementGeneration]:
+    """Generate a yearly plan, then let an independent judge push it until it is good enough.
+
+    generate -> judge -> revise -> judge -> ... until the weakest criterion clears
+    target_score, or max_rounds revisions have been spent.
+
+    Returns the plan AND its final review, so the caller can tell the two exits apart: a
+    plan that passed, and a plan that ran out of rounds still scoring 6. 
+    """
+    plan = generate_yearly_plan(profile, profile_id)
+    review = judge_yearly_plan(profile, plan)
+
+    for _round in range(max_rounds):
+        if review.overall >= target_score:
+            break
+
+        # A revision is a fresh generation: the model rewrites the whole plan
+        # with the critique in context, and every validator gates it exactly as before.
+        generated = generate_structured(
+            _build_revision_prompt(profile, plan, review), YearlyPlanGeneration
+        )
+        plan = YearlyPlan(
+            profile_id=profile_id,
+            yearly_goal=generated.yearly_goal,
+            phases=generated.phases,
+        )
+        review = judge_yearly_plan(profile, plan)
+
+    return plan, review
 
 
 # testing

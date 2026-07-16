@@ -15,12 +15,11 @@ plan and hands the trainee a customized workout for today.
   lift's target for the week, plus accessory exercises pulled from a curated exercise
   table (filtered by equipment access and injuries) and picked/prescribed by an LLM.
 - **Structured data + free text.** The profile's enums (injury regions, equipment) drive a
-  **deterministic** filter that decides which exercises are *allowed*. Two optional free-text
-  fields (`goal_description`, `injury_description`) are then fed to the **LLM prompts**, which
-  guide the choice *within* that already-safe list. So safety stays deterministic, while the
-  LLM handles nuance the enums can't express: ticking "shoulders" excludes every
-  shoulder-stressing exercise, whereas writing *"shoulders ache on pressing; flyes are fine"*
-  lets the model avoid the presses while keeping the flyes.
+  **deterministic** filter deciding which exercises are *allowed*; two optional free-text fields
+  then guide the LLM's choice *within* that already-safe list, and can never widen it. Safety
+  stays deterministic while the LLM adds nuance the enums can't express: ticking "shoulders"
+  excludes everything shoulder-stressing, whereas *"shoulders ache on pressing; flyes are fine"*
+  drops the presses but keeps the flyes.
 
 ## Setup
 
@@ -56,7 +55,7 @@ server, an Anthropic API key.
 
 **Terminal questionnaire** (collects a profile and saves it):
 ```
-uv run python scripts/run_questionnaire.py
+uv run python -m scripts.run_questionnaire
 ```
 
 **API server + web UI:**
@@ -64,10 +63,9 @@ uv run python scripts/run_questionnaire.py
 uv run uvicorn tpg.main:app --reload
 ```
 Open `http://127.0.0.1:8000/app/` for the web UI: an onboarding form, then a "This Week" view
-showing every training day of the current week with today highlighted, and a "Your Plan"
-screen (linked from the week view) that surfaces what the LLM actually produced — the three
-yearly phases and the twelve monthly targets climbing to the goal. Interactive API docs (try
-requests directly in the browser) are at `http://127.0.0.1:8000/docs`.
+showing every training day with today highlighted, and a "Your Plan" screen (linked from the
+week view) showing the three yearly phases and the twelve monthly targets climbing to the goal.
+Interactive API docs are at `http://127.0.0.1:8000/docs`.
 
 ## Tests
 
@@ -75,16 +73,38 @@ requests directly in the browser) are at `http://127.0.0.1:8000/docs`.
 uv run pytest
 ```
 
-62 tests, well under a second. They are **fast, offline and free**: no network, no database,
-no API key needed, so they can be run constantly. Everything in `tests/` obeys that rule —
-anything that talks to Claude or Postgres is a manual smoke script in `scripts/` instead
-(`smoke_llm.py`, `smoke_generate_structured.py`), which is why those are not named `test_*`.
+74 tests, well under a second. They are **fast, offline and free**: no network, no database, no
+API key, so they can be run constantly. Anything that talks to Claude or Postgres is a manual
+smoke script in `scripts/` instead, which is why those aren't named `test_*` and must be run
+with `-m` (`uv run python -m scripts.smoke_judge`).
 
-They cover the parts where a bug is silent rather than loud: every Pydantic validator (the
-rules that stop a plausible-looking LLM response from being quietly wrong), the deterministic
+They cover where bugs are silent rather than loud: every Pydantic validator, the deterministic
 exercise filter, the calendar math, and the way the generators chain each step from the
-previous one's result. The LLM is stubbed at the per-unit seam, so the orchestration is
-tested without ever calling the API.
+previous one's result. The LLM is stubbed at the per-unit seam, so orchestration is tested
+without ever calling the API.
+
+## Judging plan quality
+
+Validation proves a plan is well **formed** (phases in order, contiguous, 12 months, ending on
+the goal). It says nothing about whether it's any **good**: a plan dumping 93% of the year's
+gain into the first four months passes every check and is still nonsense.
+
+`tpg/eval/judge.py` scores a plan on the two things validators can't see:
+
+| Criterion | Question |
+|---|---|
+| `progression_rate` | Is the climb spread sensibly across the year, or crammed into one phase? |
+| `phase_proportioning` | Do the three phase lengths suit this trainee's experience level? |
+
+Each gets a 1-10 score plus a rationale. The plan's overall score is its **weakest** criterion,
+computed rather than asked for, since an LLM asked to summarise its own scores will contradict
+them.
+
+`generate_reviewed_yearly_plan` then loops: generate, score, and if it falls short, hand the
+planner its own plan plus the review and ask for better. It stops once the score clears the
+target or the round limit runs out, returning the review alongside the plan so callers can tell
+those two endings apart. The default target is 7 rather than 9 because this judge never awards
+9 to anything; re-measure it if you edit the judge's prompt.
 
 ## API reference
 
@@ -107,6 +127,7 @@ tpg/
   schemas/     Pydantic models: profile, yearly/monthly/weekly plan, exercise, session
   planning/    Planning Flow generators (yearly, monthly, weekly)
   session/     Session Flow: eligibility filtering, scheduling, session generation
+  eval/        LLM-as-judge: scores a yearly plan's quality (see Judging plan quality)
   llm.py       LLM provider abstraction (Claude / Ollama) + structured-output validation
   tracing.py   Langfuse `observe` decorator (a no-op when tracing is off)
   db.py        All Postgres access (save_*/load_* functions)
@@ -130,9 +151,8 @@ browser's `localStorage`, there's no login.
 ## Observability (Langfuse)
 
 Every LLM call is traced when Langfuse credentials are present. The Anthropic SDK is
-auto-instrumented in `tpg/llm.py`, so calls are captured without touching any call site,
-and `@observe()` decorators on the generator functions nest those calls into a readable
-tree. One plan generation becomes a single trace:
+auto-instrumented in `tpg/llm.py`, so calls are captured without touching any call site, and
+`@observe()` decorators nest them into a readable tree. One request becomes one trace:
 
 ```
 generate_week_api                         15.3s   $0.0122
@@ -144,14 +164,9 @@ generate_week_api                         15.3s   $0.0122
    └─ generate_todays_session             (rest day: no LLM call)
 ```
 
-Most usefully, the retry-with-feedback loop in `generate_structured` becomes visible —
-each attempt shows up as its own call under one span, so a validation failure and its
-recovery are no longer invisible.
+This also makes the retry loop in `generate_structured` visible: each attempt is its own call
+under one span, so a validation failure and its recovery stop being invisible.
 
 ## Not yet built
-
-- **LangGraph** (orchestration). Deliberately deferred; still an open question whether it
-  adds real value here, since it would mostly formalize control flow that already works
-  today as plain Python.
 - **A Profile view/edit page, workout logging/history, and real plan-generation progress
   reporting.** None of these have backend support yet.
